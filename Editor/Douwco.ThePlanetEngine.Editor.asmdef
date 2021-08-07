@@ -1,6 +1,8 @@
 {
     "name": "Douwco.ThePlanetEngine.Editor",
-    "references": [],
+    "references": [
+        "Douwco.ThePlanetEngine.Runtime"
+    ],
     "includePlatforms": [
         "Editor"
     ],
