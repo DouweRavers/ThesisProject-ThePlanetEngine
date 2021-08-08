@@ -1,1 +1,0 @@
-Under what kind of license do I put this?
