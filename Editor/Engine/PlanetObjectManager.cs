@@ -11,14 +11,17 @@ internal class PlanetObjectManager : ScriptableObject {
         planet.name = planetName;
         PlanetRoot planetRoot = planet.AddComponent<PlanetRoot>();
         planetRoot.Init(planetName);
-        Scene activeScene = SceneManager.GetActiveScene();
-        SceneManager.MoveGameObjectToScene(planet, activeScene);
-        activePlanet = planet;
+        ChangeActivePlanet(planet);
         return planet;
     }
 
     internal void ChangeActivePlanet(GameObject planet) {
-        Destroy(activePlanet);
+        if(activePlanet != null) DestroyImmediate(activePlanet);
+        if (planet != null) {
+            activePlanet = planet;
+            Scene activeScene = SceneManager.GetActiveScene();
+            SceneManager.MoveGameObjectToScene(planet, activeScene);
+        }
         activePlanet = planet;
     }
 }

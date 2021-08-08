@@ -32,7 +32,8 @@ internal class PEAssetManager : ScriptableObject {
     }
 
     public string[] ScanSavedPlanets() {
-        string[] planetFiles = AssetDatabase.FindAssets("*", new string[] { PEassetsFolderPath });
+        UpdateAssetPath();
+        string[] planetFiles = AssetDatabase.FindAssets("* l:PlanetEngine", new string[] { PEassetsFolderPath });
         string[] reducedArray = new string[planetFiles.Length-1];
         for (int i = 0, j = 0; i < planetFiles.Length; i++, j++) {
             string file = AssetDatabase.GUIDToAssetPath(planetFiles[i]);
@@ -44,7 +45,12 @@ internal class PEAssetManager : ScriptableObject {
         return reducedArray;
     }
 
-    internal GameObject LoadPlanet(string planetName) {
-        throw new NotImplementedException();
+    internal void DeletePlanet(string planetName) {
+        AssetDatabase.DeleteAsset(PEassetsFolderPath + planetName + ".json");
+    }
+
+    internal string LoadPlanet(string planetName) {
+        TextAsset textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(PEassetsFolderPath + planetName + ".json");
+        return textAsset.text;
     }
 }

@@ -93,11 +93,11 @@ public class PlanetEngineWindow : EditorWindow {
                 scrollManager = GUILayout.BeginScrollView(scrollManager, Stylesheet.headingStyle);
                 foreach(string planetName in PlanetEngine.GetAllPlanetNames()) {
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Load", GUILayout.Width(50))) { 
-                        
+                    if (GUILayout.Button("Load", GUILayout.Width(50))) {
+                        PlanetEngine.SelectPlanet(planetName);
                     };
                     if (GUILayout.Button("Delete", GUILayout.Width(55))) {
-
+                        PlanetEngine.DeletePlanet(planetName);
                     };
                     GUILayout.Label(planetName, Stylesheet.selectingStyle);
                     GUILayout.EndHorizontal();

@@ -49,10 +49,18 @@ public sealed class PlanetEngine : ScriptableObject {
     }
 
     public static void SelectPlanet(string planetName) {
-        GameObject planet = Instance.assetManager.LoadPlanet(planetName);
-        Instance.planetObjectManager.ChangeActivePlanet(planet);
+        string planet = Instance.assetManager.LoadPlanet(planetName);
+        GameObject gameObject = new GameObject();
+        gameObject.name = planetName;
+        gameObject.AddComponent<PlanetRoot>();
+        Instance.planetObjectManager.ChangeActivePlanet(gameObject);
     }
     
+    public static void DeletePlanet(string planetName) {
+        Instance.planetObjectManager.ChangeActivePlanet(null);
+        Instance.assetManager.DeletePlanet(planetName);
+    }
+
     void Awake() {
         assetManager = CreateInstance<PEAssetManager>();
         planetObjectManager = CreateInstance<PlanetObjectManager>();
