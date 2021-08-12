@@ -11,35 +11,45 @@ using UnityEngine;
 
 public class PlanetEngineWindow : EditorWindow {
 
-    Vector2 scrollManager = new Vector2();
     Texture2D PElogo, Dlogo;
-    Views currentView = Views.MANAGER;
+    View activeView;
+    Vector2 scroll;
 
-    [MenuItem("Window/Planet Engine")]
+    [MenuItem("Window/Douwco/Planet Engine")]
     public static void ShowWindow() {
         PlanetEngineWindow wnd = GetWindow<PlanetEngineWindow>();
         wnd.titleContent = new GUIContent("The Planet Engine");
     }
 
+    [MenuItem("GameObject/3D Object/Planet", false, 40)]
+    public static void createPlanet() {
+        NewPlanetPopup.Popup();
+    }
+
     private void Awake() {
+        // configure view
+        activeView = View.GetViewOfType(Views.NOPLANET);
+
         // load in images from package
-        PElogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Editor/Icons/PElogo.png", typeof(Texture2D));
-        Dlogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Editor/Icons/DouwcoLogo.png", typeof(Texture2D));
+        PElogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Icons/PElogo.png", typeof(Texture2D));
+        Dlogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Icons/DouwcoLogo.png", typeof(Texture2D));
     }
 
     public void OnFocus() {
-        // update styles if new ones are implemented
+        // update styles if new ones are implemented (can be changed to awake once development is done)
         Stylesheet.InitStyles();
     }
 
     public void OnGUI() {
         GUIheader();
         GUItoolbar();
-        GUILayout.BeginVertical(Stylesheet.headingStyle, GUILayout.ExpandHeight(true));
-        GUIshowview();
 
-        GUILayout.EndVertical();
-        GUIfooter();        
+        // body
+        GUILayout.BeginScrollView(scroll, Stylesheet.headingStyle, GUILayout.ExpandHeight(true));
+        activeView.ShowGUI();
+        GUILayout.EndScrollView();
+
+        GUIfooter();
     }
 
     void GUIheader() {
@@ -48,7 +58,7 @@ public class PlanetEngineWindow : EditorWindow {
         GUILayout.Label(PElogo, GUILayout.Width(50), GUILayout.Height(50));
         GUILayout.BeginVertical(GUILayout.Height(50));
         GUILayout.Label("The Planet Engine", Stylesheet.titleStyle);
-        if (PlanetEngine.GetActivePlanet() != null) GUILayout.Label(PlanetEngine.GetActivePlanet().name, Stylesheet.subtitleStyle);
+        if (PlanetEngineEditor.isSelectedObjectPlanet()) GUILayout.Label(PlanetEngineEditor.getSelectedPlanet().name, Stylesheet.subtitleStyle);
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
         GUILayout.Box(GUIContent.none, Stylesheet.horizontalLine);
@@ -63,49 +73,23 @@ public class PlanetEngineWindow : EditorWindow {
     }
 
     void GUItoolbar() {
-
         GUILayout.BeginHorizontal();
         GUILayout.Label("", GUILayout.ExpandWidth(true)); // spacer
-        if (GUILayout.Button("P")) {
-            currentView = Views.MANAGER;
+        if (!PlanetEngineEditor.isSelectedObjectPlanet()) {
+            activeView = View.GetViewOfType(Views.NOPLANET);
+            GUI.enabled = false;
+        } else if (activeView.viewType == Views.NOPLANET) {
+            activeView = View.GetViewOfType(Views.GENERATOR);
         }
-        if (PlanetEngine.GetActivePlanet() == null) GUI.enabled = false;
         if (GUILayout.Button("G")) {
-            currentView = Views.GENERATOR;
+            activeView = View.GetViewOfType(Views.GENERATOR);
         }
         if (true) GUI.enabled = false;
         if (GUILayout.Button("E")) {
-            currentView = Views.EDITOR;
+            activeView = View.GetViewOfType(Views.EDITOR);
         }
         GUI.enabled = true;
         GUILayout.Label("", GUILayout.ExpandWidth(true)); // spacer
         GUILayout.EndHorizontal();
-    }
-
-    void GUIshowview() {
-        switch (currentView) {
-            case Views.MANAGER: {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("", GUILayout.ExpandWidth(true)); // spacer
-                if (GUILayout.Button("Create new planet", GUILayout.Width(150))) { NewPlanetPopup.Popup(); }
-                GUILayout.Label("", GUILayout.ExpandWidth(true)); // spacer
-                GUILayout.EndHorizontal();
-                scrollManager = GUILayout.BeginScrollView(scrollManager, Stylesheet.headingStyle);
-                foreach(string planetName in PlanetEngine.GetAllPlanetNames()) {
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Load", GUILayout.Width(50))) {
-                        PlanetEngine.SelectPlanet(planetName);
-                    };
-                    if (GUILayout.Button("Delete", GUILayout.Width(55))) {
-                        PlanetEngine.DeletePlanet(planetName);
-                    };
-                    GUILayout.Label(planetName, Stylesheet.selectingStyle);
-                    GUILayout.EndHorizontal();
-
-                }
-                GUILayout.EndScrollView();
-                break;
-            }
-        }
     }
 }

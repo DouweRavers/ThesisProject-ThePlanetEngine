@@ -2,7 +2,6 @@
   "name": "com.douwco.theplanetengine",
   "displayName": "The Planet Engine",
   "version": "0.0.1",
-  "unity": "2020.3",
   "description": "A tool that let's you create custom procedural planets and afterwards edit them.",
   "author": {
     "name": "Douwe Ravers",

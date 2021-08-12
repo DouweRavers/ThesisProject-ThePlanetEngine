@@ -1,4 +1,3 @@
-using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,34 +22,36 @@ internal class PEAssetManager : ScriptableObject {
         }
     }
 
-    public void SavePlanetObjectToFile(PlanetRoot planetRoot) {
+    public GameObject SavePlanetObjectToFile(GameObject planetObject) {
         UpdateAssetPath();
-        string jsonPlanet = JsonUtility.ToJson(planetRoot);
-        TextAsset planetFile = new TextAsset(jsonPlanet);
-        AssetDatabase.CreateAsset(planetFile, PEassetsFolderPath + planetRoot.planetName + ".json");
-        AssetDatabase.SetLabels(planetFile, new[] { "PlanetEngine" });
+        if (AssetDatabase.FindAssets(planetObject.name + ".prefab l:PlanetEngine", new[] { PEassetsFolderPath }).Length > 0) {
+            planetObject = PrefabUtility.SavePrefabAsset(planetObject);
+        } else {
+            planetObject = PrefabUtility.SaveAsPrefabAsset(planetObject, PEassetsFolderPath + planetObject.name + ".prefab");
+            if (planetObject != null) AssetDatabase.SetLabels(planetObject, new[] { "PlanetEngine" });
+        }
+        return planetObject;
     }
 
     public string[] ScanSavedPlanets() {
         UpdateAssetPath();
-        string[] planetFiles = AssetDatabase.FindAssets("* l:PlanetEngine", new string[] { PEassetsFolderPath });
-        string[] reducedArray = new string[planetFiles.Length-1];
-        for (int i = 0, j = 0; i < planetFiles.Length; i++, j++) {
-            string file = AssetDatabase.GUIDToAssetPath(planetFiles[i]);
-            file = file.Replace(PEassetsFolderPath, "");
-            file = file.Replace(".json", "");
-            if (file.Contains("PlanetEngineRoot")) j--;
-            else reducedArray[j] = file;
+        string[] planetFiles = AssetDatabase.FindAssets("*.prefab l:PlanetEngine", new string[] { PEassetsFolderPath });
+        for (int i = 0; i < planetFiles.Length; i++) {
+            planetFiles[i] = AssetDatabase.GUIDToAssetPath(planetFiles[i]).Replace(PEassetsFolderPath, "");
         }
-        return reducedArray;
+        return planetFiles;
     }
 
     internal void DeletePlanet(string planetName) {
-        AssetDatabase.DeleteAsset(PEassetsFolderPath + planetName + ".json");
+        AssetDatabase.DeleteAsset(PEassetsFolderPath + planetName + ".prefab");
     }
 
-    internal string LoadPlanet(string planetName) {
-        TextAsset textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(PEassetsFolderPath + planetName + ".json");
-        return textAsset.text;
+    internal GameObject LoadPlanet(string planetName, bool open = true) {
+        GameObject planetObject = null;
+        if (open) {
+            planetObject = AssetDatabase.LoadAssetAtPath<GameObject>(PEassetsFolderPath + planetName + ".prefab");
+            AssetDatabase.OpenAsset(planetObject);
+        }
+        return planetObject;
     }
 }

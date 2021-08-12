@@ -9,13 +9,16 @@ using UnityEngine;
  * 
  **********************************************************************/
 
-[Serializable]
-public class PlanetRoot : MonoBehaviour {
-    public string planetName;
+public enum LODmodes { 
+    SINGLEMESH, // a single mesh presenting the whole planet for full view of planet (front and back)
+    QUADTREE, // a quad tree based mesh system for large chunks of the planet (high detail, complex system)
+    TERRAIN // a small part of the planet is generated on top of the unity terrain system for best performance.
+};
 
-    public void Init(string planetName) {
-        this.planetName = planetName;
-    }
+[RequireComponent(typeof(PlanetMeshGenerator))]
+public class PlanetRoot : MonoBehaviour {
+
+    LODmodes lodMode = LODmodes.SINGLEMESH;
 
     void Start() {
 
@@ -23,5 +26,11 @@ public class PlanetRoot : MonoBehaviour {
 
     void Update() {
 
+    }
+
+    public void SetLodMode(LODmodes mode) { lodMode = mode; }
+
+    void UpdateMesh() {
+        gameObject.GetComponent<PlanetMeshGenerator>().GenerateMesh();
     }
 }

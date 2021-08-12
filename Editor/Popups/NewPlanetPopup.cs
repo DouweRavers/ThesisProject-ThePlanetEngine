@@ -23,13 +23,13 @@ internal class NewPlanetPopup : EditorWindow {
         GUILayout.Label("Create new planet", Stylesheet.titleStyle, GUILayout.ExpandHeight(true));
         planetName = EditorGUILayout.TextField("Planet name:", planetName);
         if (planetName.Length == 0) { // check if name already exists or check for no name
-            
+
             GUILayout.Label("Invalid name or name already taken", Stylesheet.redTextStyle);
             GUI.enabled = false;
         }
         GUILayout.BeginHorizontal(Stylesheet.headingStyle);
         if (GUILayout.Button("Submit")) {
-            PlanetEngine.CreatePlanet(planetName);
+            PlanetEngineEditor.CreatePlanet(planetName);
             Close();
         }
         GUI.enabled = true;
