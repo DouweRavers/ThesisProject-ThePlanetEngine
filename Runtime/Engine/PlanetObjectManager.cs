@@ -11,7 +11,6 @@ internal class PlanetObjectManager : ScriptableObject {
         GameObject planet = new GameObject();
         planet.name = planetName;
         planet.AddComponent<PlanetRoot>();
-        planet.AddComponent<PlanetMeshGenerator>();
         return planet;
     }
 }

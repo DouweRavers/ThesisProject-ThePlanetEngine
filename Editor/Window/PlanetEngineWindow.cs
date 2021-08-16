@@ -54,14 +54,13 @@ public class PlanetEngineWindow : EditorWindow {
 
     void GUIheader() {
         GUILayout.BeginVertical();
-        GUILayout.BeginHorizontal(Stylesheet.headingStyle);
-        GUILayout.Label(PElogo, GUILayout.Width(50), GUILayout.Height(50));
-        GUILayout.BeginVertical(GUILayout.Height(50));
-        GUILayout.Label("The Planet Engine", Stylesheet.titleStyle);
-        if (PlanetEngineEditor.isSelectedObjectPlanet()) GUILayout.Label(PlanetEngineEditor.getSelectedPlanet().name, Stylesheet.subtitleStyle);
-        GUILayout.EndVertical();
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("", GUILayout.ExpandWidth(true));
+        GUILayout.Label(PElogo, GUILayout.Width(250), GUILayout.Height(140));
+        GUILayout.Label("", GUILayout.ExpandWidth(true));
         GUILayout.EndHorizontal();
         GUILayout.Box(GUIContent.none, Stylesheet.horizontalLine);
+        if (PlanetEngineEditor.isSelectedObjectPlanet()) GUILayout.Label(PlanetEngineEditor.getSelectedPlanet().name, Stylesheet.subtitleStyle);
         GUILayout.EndVertical();
     }
 

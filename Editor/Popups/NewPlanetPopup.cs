@@ -13,6 +13,7 @@ internal class NewPlanetPopup : EditorWindow {
     private string planetName = "";
 
     public static void Popup() {
+        Stylesheet.InitStyles();
         NewPlanetPopup wnd = CreateInstance<NewPlanetPopup>();
         Rect sceneViewPos = GetWindow<SceneView>().position;
         wnd.position = new Rect(sceneViewPos.x + sceneViewPos.width / 2 - 150, sceneViewPos.y + sceneViewPos.height / 2 - 50, 300, 150);

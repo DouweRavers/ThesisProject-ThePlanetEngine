@@ -30,7 +30,9 @@ public class PlanetRoot : MonoBehaviour {
 
     public void SetLodMode(LODmodes mode) { lodMode = mode; }
 
-    void UpdateMesh() {
-        gameObject.GetComponent<PlanetMeshGenerator>().GenerateMesh();
+    public void UpdateMesh() {
+        gameObject.GetComponent<PlanetMeshGenerator>().MakeCube();
+        gameObject.GetComponent<PlanetMeshGenerator>().Divide();
+        gameObject.GetComponent<PlanetMeshGenerator>().BlowUp();
     }
 }
