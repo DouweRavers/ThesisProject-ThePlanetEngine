@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 
 internal class NoPlanetView : View {
@@ -10,7 +9,7 @@ internal class NoPlanetView : View {
         GUILayout.Label("No planet selected", Stylesheet.subtitleStyle);
         GUILayout.BeginHorizontal();
         GUILayout.Label("", GUILayout.ExpandWidth(true)); // spacer
-        if (GUILayout.Button("Create new planet", GUILayout.Width(150))) { 
+        if (GUILayout.Button("Create new planet", GUILayout.Width(150))) {
             NewPlanetPopup.Popup();
         }
         GUILayout.Label("", GUILayout.ExpandWidth(true)); // spacer

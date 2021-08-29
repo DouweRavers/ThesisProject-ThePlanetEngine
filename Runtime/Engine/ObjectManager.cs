@@ -1,9 +1,8 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 
 
-internal class PlanetObjectManager : ScriptableObject {
+internal class ObjectManager : ScriptableObject {
 
     public GameObject activePlanet;
 

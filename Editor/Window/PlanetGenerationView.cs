@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 internal class PlanetGenerationView : View {
@@ -21,22 +19,19 @@ internal class PlanetGenerationView : View {
         */
         GUILayout.Label("Mesh primitives");
         if (GUILayout.Button("Generate Quad")) {
-            PlanetEngineEditor.getSelectedPlanet().GetComponent<PlanetMeshGenerator>().MakeQuad();
+            PlanetEngine.MakeQuad(PlanetEngineEditor.getSelectedPlanet());
         }
         if (GUILayout.Button("Generate Cube")) {
-            PlanetEngineEditor.getSelectedPlanet().GetComponent<PlanetMeshGenerator>().MakeCube();
+            PlanetEngine.MakeCube(PlanetEngineEditor.getSelectedPlanet());
         }
 
         GUILayout.Label("Modify mesh");
         if (GUILayout.Button("Divide")) {
-            PlanetEngineEditor.getSelectedPlanet().GetComponent<PlanetMeshGenerator>().Divide();
+            PlanetEngine.Divide(PlanetEngineEditor.getSelectedPlanet());
         }
         if (GUILayout.Button("Blow up (like Balloon)")) {
-            PlanetEngineEditor.getSelectedPlanet().GetComponent<PlanetMeshGenerator>().BlowUp();
+            PlanetEngine.BlowUp(PlanetEngineEditor.getSelectedPlanet());
         }
-
-
-
     }
 
 

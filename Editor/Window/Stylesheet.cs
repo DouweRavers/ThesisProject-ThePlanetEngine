@@ -35,7 +35,7 @@ internal static class Stylesheet {
         subtitleStyle.fontSize = 20;
         subtitleStyle.normal.textColor = Color.white;
         subtitleStyle.alignment = TextAnchor.MiddleCenter;
-        subtitleStyle.padding = new RectOffset(5,5,10,10);
+        subtitleStyle.padding = new RectOffset(5, 5, 10, 10);
 
         redTextStyle = new GUIStyle();
 

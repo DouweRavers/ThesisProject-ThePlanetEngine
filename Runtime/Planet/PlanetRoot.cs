@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 /**********************************************************************
@@ -9,13 +8,14 @@ using UnityEngine;
  * 
  **********************************************************************/
 
-public enum LODmodes { 
+public enum LODmodes {
     SINGLEMESH, // a single mesh presenting the whole planet for full view of planet (front and back)
     QUADTREE, // a quad tree based mesh system for large chunks of the planet (high detail, complex system)
     TERRAIN // a small part of the planet is generated on top of the unity terrain system for best performance.
 };
 
-[RequireComponent(typeof(PlanetMeshGenerator))]
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class PlanetRoot : MonoBehaviour {
 
     LODmodes lodMode = LODmodes.SINGLEMESH;
@@ -29,10 +29,4 @@ public class PlanetRoot : MonoBehaviour {
     }
 
     public void SetLodMode(LODmodes mode) { lodMode = mode; }
-
-    public void UpdateMesh() {
-        gameObject.GetComponent<PlanetMeshGenerator>().MakeCube();
-        gameObject.GetComponent<PlanetMeshGenerator>().Divide();
-        gameObject.GetComponent<PlanetMeshGenerator>().BlowUp();
-    }
 }
