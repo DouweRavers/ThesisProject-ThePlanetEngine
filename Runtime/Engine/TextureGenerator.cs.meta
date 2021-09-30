@@ -4,8 +4,8 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - textureShader: {fileID: 7200000, guid: 7be84bd6ad8edd449ac7efab689d0543, type: 3}
-  - renderTexture: {instanceID: 0}
+  - textureShader: {fileID: 7200000, guid: 469f3a25691e5084ba16a74360c237af, type: 3}
+  - noiseTexture: {fileID: 2800000, guid: 05955a753fc7d444f9f9f454282cecd3, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

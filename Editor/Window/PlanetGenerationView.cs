@@ -1,13 +1,15 @@
 using UnityEngine;
 
-internal class PlanetGenerationView : View {
+internal class PlanetGenerationView : View
+{
 
     public override Views viewType { get { return Views.GENERATOR; } }
 
     bool autogenerating = false;
     bool settingsChanged = true;
-
-    public override void ShowGUI() {
+    float size = 5f;
+    public override void ShowGUI()
+    {
         /*
         GUILayout.BeginHorizontal();
         if(GUILayout.Button("Generate Planet") || (autogenerating && settingsChanged)) {
@@ -18,20 +20,33 @@ internal class PlanetGenerationView : View {
         GUILayout.EndHorizontal();
         */
         GUILayout.Label("Mesh primitives");
-        if (GUILayout.Button("Generate Quad")) {
+        if (GUILayout.Button("Generate Quad"))
+        {
             PlanetEngine.MakeQuad(PlanetEngineEditor.getSelectedPlanet());
         }
-        if (GUILayout.Button("Generate Cube")) {
+        if (GUILayout.Button("Generate Cube"))
+        {
             PlanetEngine.MakeCube(PlanetEngineEditor.getSelectedPlanet());
+        }
+        if (GUILayout.Button("Generate Sphere"))
+        {
+            PlanetEngine.MakeSphere(PlanetEngineEditor.getSelectedPlanet());
         }
 
         GUILayout.Label("Modify mesh");
-        if (GUILayout.Button("Divide")) {
+        if (GUILayout.Button("Divide using CPU"))
+        {
+            PlanetEngine.Divide(PlanetEngineEditor.getSelectedPlanet(), true);
+        }
+        if (GUILayout.Button("Divide using GPU"))
+        {
             PlanetEngine.Divide(PlanetEngineEditor.getSelectedPlanet());
         }
-        if (GUILayout.Button("Blow up (like Balloon)")) {
-            PlanetEngine.BlowUp(PlanetEngineEditor.getSelectedPlanet());
+        if (GUILayout.Button("Normalize and Amplify"))
+        {
+            PlanetEngine.NormalizeAndAmplify(PlanetEngineEditor.getSelectedPlanet(), size);
         }
+        size = GUILayout.HorizontalSlider(size, 0.1f, 10f, GUILayout.Height(25));
     }
 
 
