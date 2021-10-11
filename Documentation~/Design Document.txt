@@ -1,0 +1,8 @@
+Key features
+
+- Downloadable via Github and packetmanager.
+- Unity package.
+- GPU based textures and meshes.
+- Quad based system where every quad has a associated data images.
+- The images are based on higher and lower layers.
+- When editing terrain these images are stored and then used by the algorithm to 
