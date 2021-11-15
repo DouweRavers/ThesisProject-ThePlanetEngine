@@ -12,51 +12,46 @@ using UnityEngine;
  *      
  * 
  **********************************************************************/
+namespace PlanetEngine {
 
-[Serializable]
-public sealed class PlanetEngineEditor : ScriptableObject {
+	[Serializable]
+	public sealed class PlanetEngineEditor : ScriptableObject {
 
-    // Singleton requirements
-    private static PlanetEngineEditor instance = null;
-    private static readonly object padlock = new object();
+		#region Singleton
+		// This class only exist once in the editor.
+		private static PlanetEngineEditor instance = null;
+		private static readonly object padlock = new object();
+		public static PlanetEngineEditor singleton {
+			get {
+				lock (padlock) {
+					if (instance == null) {
+						instance = CreateInstance<PlanetEngineEditor>();
+					}
+					return instance;
+				}
+			}
+		}
+		#endregion
 
-    // helper classes
-    private PEAssetManager assetManager;
 
-    // Object access
-    public static PlanetEngineEditor Instance {
-        get {
-            lock (padlock) {
-                if (instance == null) {
-                    instance = CreateInstance<PlanetEngineEditor>();
-                }
-                return instance;
-            }
-        }
-    }
+		public static void CreatePlanet(string planetName) {
+			GameObject planet = PlanetEngine.CreatePlanet(planetName);
+			Selection.activeTransform = planet.transform;
+		}
 
-    void Awake() {
-        assetManager = CreateInstance<PEAssetManager>();
-    }
+		public static bool isSelectedObjectPlanet() {
+			if (Selection.activeGameObject != null)
+				return Selection.activeTransform.gameObject.GetComponent<Planet>() != null;
+			else
+				return false;
+		}
 
-    public static void CreatePlanet(string planetName) {
-        GameObject planet = PlanetEngine.CreatePlanet(planetName);
-        Selection.activeTransform = planet.transform;
-        //Selection.SetActiveObjectWithContext(planet, Selection.activeContext);
-    }
+		public static GameObject getSelectedPlanet() {
+			if (isSelectedObjectPlanet())
+				return Selection.activeTransform.gameObject;
+			else
+				return null;
+		}
 
-    public static bool isSelectedObjectPlanet() {
-        if (Selection.activeGameObject != null)
-            return Selection.activeTransform.gameObject.GetComponent<PlanetRoot>() != null;
-        else
-            return false;
-    }
-
-    public static GameObject getSelectedPlanet() {
-        if (isSelectedObjectPlanet())
-            return Selection.activeTransform.gameObject;
-        else
-            return null;
-    }
-
+	}
 }
