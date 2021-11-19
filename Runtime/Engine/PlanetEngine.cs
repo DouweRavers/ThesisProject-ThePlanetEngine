@@ -25,7 +25,7 @@ namespace PlanetEngine {
 				universeObject.name = "UniverseManager";
 				universeObject.tag = "PlanetEngine";
 				universeObject.AddComponent<UniverseManager>();
-				universeObject.hideFlags = HideFlags.HideInHierarchy;
+				//universeObject.hideFlags = HideFlags.HideInHierarchy;
 			}
 			GameObject planet = new GameObject();
 			planet.name = planetName;

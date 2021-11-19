@@ -1,35 +1,50 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace PlanetEngine
-{
+namespace PlanetEngine {
 
 	[CustomEditor(typeof(Planet))]
-	[CanEditMultipleObjects]
-	public class PlanetEditor : Editor
-	{
+	//	[CanEditMultipleObjects]
+	public class PlanetEditor : Editor {
+		static bool enableHide = true;
 		Planet planet;
-		public override void OnInspectorGUI()
-		{
-			GUILayout.Label("Interface comes here...");
+		public override void OnInspectorGUI() {
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("Enable hide mode", GUILayout.Width(120f));
+			enableHide = EditorGUILayout.Toggle(enableHide, GUILayout.Width(20f));
+			EditorGUILayout.LabelField(" ", GUILayout.ExpandWidth(true));
+			EditorGUILayout.EndHorizontal();
+
+
+			// Call update functions
+			SetVisibilty();
 		}
 
-		void OnEnable()
-		{
-			planet = (target as Planet);
-			planet.GetComponent<LODGroup>().hideFlags = HideFlags.HideInInspector;
+		void Awake() {
+			planet = target as Planet;
+		}
+
+		void SetVisibilty() {
 			// Hide Components used by the Planet editor
-			for (int i = 0; i < planet.transform.childCount; i++)
-			{
-				Transform child = planet.transform.GetChild(i);
-				if (child.gameObject.tag.Equals("PlanetEngine"))
-				{
-					SceneVisibilityManager.instance.DisablePicking(child.gameObject, true);
-					child.gameObject.hideFlags = HideFlags.HideInHierarchy;
+			if (enableHide) {
+				planet.GetComponent<LODGroup>().hideFlags = HideFlags.HideInInspector;
+				for (int i = 0; i < planet.transform.childCount; i++) {
+					Transform child = planet.transform.GetChild(i);
+					if (child.gameObject.tag.Equals("PlanetEngine")) {
+						SceneVisibilityManager.instance.DisablePicking(child.gameObject, true);
+						child.gameObject.hideFlags = HideFlags.HideInHierarchy;
+					}
+				}
+			} else {
+				planet.GetComponent<LODGroup>().hideFlags = HideFlags.None;
+				for (int i = 0; i < planet.transform.childCount; i++) {
+					Transform child = planet.transform.GetChild(i);
+					if (child.gameObject.tag.Equals("PlanetEngine")) {
+						SceneVisibilityManager.instance.EnablePicking(child.gameObject, true);
+						child.gameObject.hideFlags = HideFlags.None;
+					}
 				}
 			}
-			// Setup planet in editor
-			if (planet.transform.childCount == 0) planet.CreatePlanet();
 		}
 	}
 }
