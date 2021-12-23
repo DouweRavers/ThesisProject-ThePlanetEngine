@@ -3,7 +3,8 @@ using UnityEngine;
 namespace PlanetEngine {
 
 
-	internal class MeshGenerator : ScriptableObject {
+	//internal
+	public class MeshGenerator : ScriptableObject {
 		public ComputeShader meshShader;
 
 		#region Singleton
@@ -53,7 +54,11 @@ namespace PlanetEngine {
 			mesh.uv = newUV.ToArray();
 			return mesh;
 		}
-
+		public static Mesh GenerateUnitQuadMesh(Vector2[] uvSubSpace) {
+			Mesh mesh = GenerateUnitQuadMesh();
+			mesh.uv = uvSubSpace;
+			return mesh;
+		}
 		public static Mesh GenerateUnitCubeMesh() {
 
 			List<Vector3> newVertices = new List<Vector3>() {
@@ -105,40 +110,40 @@ namespace PlanetEngine {
 
 			List<Vector2> newUV = new List<Vector2>() {
             // FrontFace
-            new Vector2(1f/3, 1f/3), // 1 x0y0
-            new Vector2(1f/3, 2f/3), // 2 x0y1
-            new Vector2(2f/3, 2f/3), // 3 x1y1
-            new Vector2(2f/3, 1f/3), // 4 x1y0
+            new Vector2(1f/4, 1f/3), // 1 x0y0
+            new Vector2(1f/4, 2f/3), // 2 x0y1
+            new Vector2(2f/4, 2f/3), // 3 x1y1
+            new Vector2(2f/4, 1f/3), // 4 x1y0
 
             // LeftFace
             new Vector2(0, 1f/3), // 1 x0y0
             new Vector2(0, 2f/3), // 2 x0y1
-            new Vector2(1f/3, 2f/3), // 3 x1y1
-            new Vector2(1f/3, 1f/3), // 4 x1y0
+            new Vector2(1f/4, 2f/3), // 3 x1y1
+            new Vector2(1f/4, 1f/3), // 4 x1y0
 
             // RightFace
-            new Vector2(2f/3, 1f/3), // 1 x0y0
-            new Vector2(2f/3, 2f/3), // 2 x0y1
-            new Vector2(1, 2f/3), // 3 x1y1
-            new Vector2(1, 1f/3), // 4 x1y0
+            new Vector2(2f/4, 1f/3), // 1 x0y0
+            new Vector2(2f/4, 2f/3), // 2 x0y1
+            new Vector2(3f/4, 2f/3), // 3 x1y1
+            new Vector2(3f/4, 1f/3), // 4 x1y0
 
             // TopFace
-            new Vector2(1f/3, 2f/3), // 1 x0y0
-            new Vector2(1f/3, 1), // 2 x0y1
-            new Vector2(2f/3, 1), // 3 x1y1
-            new Vector2(2f/3, 2f/3), // 4 x1y0
+            new Vector2(1f/4, 2f/3), // 1 x0y0
+            new Vector2(1f/4, 1), // 2 x0y1
+            new Vector2(2f/4, 1), // 3 x1y1
+            new Vector2(2f/4, 2f/3), // 4 x1y0
 
             // BottomFace
-            new Vector2(1f/3, 0), // 1 x0y0
-            new Vector2(1f/3, 1f/3), // 2 x0y1
-            new Vector2(2f/3, 1f/3), // 3 x1y1
-            new Vector2(2f/3, 0), // 4 x1y0
+            new Vector2(1f/4, 0), // 1 x0y0
+            new Vector2(1f/4, 1f/3), // 2 x0y1
+            new Vector2(2f/4, 1f/3), // 3 x1y1
+            new Vector2(2f/4, 0), // 4 x1y0
 
             // BackFace
-            new Vector2(0, 0), // 1 x0y0
-            new Vector2(0, 1f/3), // 2 x0y1
-            new Vector2(1f/3, 1f/3), // 3 x1y1
-            new Vector2(1f/3, 0), // 4 x1y0
+            new Vector2(3f/4, 1f/3), // 1 x0y0
+            new Vector2(3f/4, 2f/3), // 2 x0y1
+            new Vector2(1, 2f/3), // 3 x1y1
+            new Vector2(1, 1f/3), // 4 x1y0
 
         };
 
@@ -389,6 +394,51 @@ namespace PlanetEngine {
 			}
 			mesh.vertices = vertices;
 			return mesh;
+		}
+
+		public static Mesh[] SplitPlaneMeshInFour(Mesh mesh) {
+			int[] indices = mesh.triangles;
+			Vector3[] vertices = mesh.vertices;
+			Vector2[] uvs = mesh.uv;
+			// Calculate bounds to get centre point
+			mesh.RecalculateBounds();
+			Vector3 center = mesh.bounds.center;
+			// Create 4 new meshes and corrisponding arrays
+			Mesh[] meshes = new Mesh[] {
+				new Mesh(), new Mesh(), new Mesh(), new Mesh()
+				};
+			List<int>[] indicesArrays = new List<int>[] {
+				new List<int>(), new List<int>(), new List<int>(), new List<int>()
+				};
+			List<Vector3>[] verticesArrays = new List<Vector3>[] {
+				new List<Vector3>(), new List<Vector3>(), new List<Vector3>(), new List<Vector3>()
+				};
+			List<Vector2>[] uvsArrays = new List<Vector2>[] {
+				new List<Vector2>(), new List<Vector2>(), new List<Vector2>(), new List<Vector2>()
+				};
+
+			// Assign every triangle to one of the four new meshes
+			for (int i = 0; i < indices.Length; i += 3) {
+				Vector3 triangleCenter = (vertices[indices[i]] + vertices[indices[i + 1]] + vertices[indices[i + 2]]) / 3f;
+				triangleCenter.y = 0;
+				int alpha = (triangleCenter.x < center.x ? 0 : 2) + (triangleCenter.z < center.z ? 0 : 1);
+				indicesArrays[alpha].Add(verticesArrays[alpha].Count);
+				verticesArrays[alpha].Add(vertices[indices[i]]);
+				uvsArrays[alpha].Add(uvs[indices[i]]);
+				indicesArrays[alpha].Add(verticesArrays[alpha].Count);
+				verticesArrays[alpha].Add(vertices[indices[i + 1]]);
+				uvsArrays[alpha].Add(uvs[indices[i + 1]]);
+				indicesArrays[alpha].Add(verticesArrays[alpha].Count);
+				verticesArrays[alpha].Add(vertices[indices[i + 2]]);
+				uvsArrays[alpha].Add(uvs[indices[i + 2]]);
+			}
+			for (int i = 0; i < 4; i++) {
+				meshes[i].indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+				meshes[i].vertices = verticesArrays[i].ToArray();
+				meshes[i].triangles = indicesArrays[i].ToArray();
+				meshes[i].uv = uvsArrays[i].ToArray();
+			}
+			return meshes;
 		}
 	}
 }

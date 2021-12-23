@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
-	public class QuadTreeBranch : MonoBehaviour
+	public class UniverseTarget : MonoBehaviour
 	{
 
 	}
