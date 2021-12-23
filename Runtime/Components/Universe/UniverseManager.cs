@@ -6,16 +6,18 @@ using UnityEngine;
 namespace PlanetEngine {
 	[ExecuteInEditMode]
 	public class UniverseManager : MonoBehaviour {
-		public static UniverseManager universeManager;
+		public static UniverseManager universeManager = null;
 		public float triggerRadius = 5f, drawRadius = 10f;
 		public Vector3 offset { get { return universeOffset; } }
 		Vector3 lastUpdatedPosition = Vector3.zero;
 		Vector3 universeOffset = Vector3.zero;
 		Transform target;
 		List<UniverseTransform> universeTransforms;
-		void Awake() {
+
+		void Start() {
 			universeManager = this;
 			universeTransforms = new List<UniverseTransform>();
+			UpdateTransformList();
 		}
 
 		void Update() {
@@ -29,14 +31,13 @@ namespace PlanetEngine {
 			}
 		}
 
-		public void AddUniverseTransform(UniverseTransform universeTransform) {
-			universeTransforms.Add(universeTransform);
+		public void UpdateTransformList() {
+			GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("PlanetEngine");
+			universeTransforms.Clear();
+			foreach (GameObject planetEngineObjects in gameObjects) {
+				if (planetEngineObjects.GetComponent<UniverseTransform>() != null)
+					universeTransforms.Add(planetEngineObjects.GetComponent<UniverseTransform>());
+			}
 		}
-
-		public void RemoveUniverseTransform(UniverseTransform universeTransform) {
-			universeTransforms.Remove(universeTransform);
-		}
-
-
 	}
 }

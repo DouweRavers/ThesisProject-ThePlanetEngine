@@ -23,12 +23,10 @@ namespace PlanetEngine {
 			this.planet = planet;
 			GameObject[] rootBranchObjects = new GameObject[6];
 			rootBranches = new QuadTreeBranch[6];
-			LODGroup lodGroup = planet.GetComponent<LODGroup>();
-			LOD[] lods = lodGroup.GetLODs();
-			List<Renderer> quadRenderers = new List<Renderer>(lods[0].renderers);
 			for (int i = 0; i < 6; i++) {
 				// Create branch object
 				rootBranchObjects[i] = new GameObject();
+				rootBranchObjects[i].name = planet.name + " - Branch: " + i;
 				rootBranchObjects[i].transform.SetParent(transform);
 
 				// Create mesh for current branch and set right orientation
@@ -52,7 +50,7 @@ namespace PlanetEngine {
 							new Vector2(2f/4, 1f/3), // 3 x1y1
 							new Vector2(2f/4, 0), // 4 x1y0
 						});
-						rootBranchObjects[1].transform.eulerAngles = new Vector3(180, 180, 0);
+						rootBranchObjects[1].transform.eulerAngles = new Vector3(180, 0, 0);
 						break;
 					case 2:
 						mesh = MeshGenerator.GenerateUnitQuadMesh(new Vector2[] {
@@ -103,10 +101,7 @@ namespace PlanetEngine {
 				for (int subdiv = 0; subdiv < 5; subdiv++) { mesh = MeshGenerator.SubdivideGPU(mesh); }
 				rootBranches[i] = rootBranchObjects[i].AddComponent<QuadTreeBranch>();
 				rootBranches[i].Init(planet, 0, mesh);
-				quadRenderers.Add(rootBranches[i].renderer);
 			}
-			lods[0].renderers = quadRenderers.ToArray();
-			lodGroup.SetLODs(lods);
 		}
 	}
 

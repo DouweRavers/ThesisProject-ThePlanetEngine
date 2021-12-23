@@ -3,7 +3,8 @@ using UnityEngine;
 namespace PlanetEngine {
 
 
-	internal class MeshGenerator : ScriptableObject {
+	//internal
+	public class MeshGenerator : ScriptableObject {
 		public ComputeShader meshShader;
 
 		#region Singleton

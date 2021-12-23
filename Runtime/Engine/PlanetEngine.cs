@@ -14,19 +14,6 @@ namespace PlanetEngine {
 
 	public class PlanetEngine : ScriptableObject {
 		public static GameObject CreatePlanet(string planetName) {
-			UniverseManager universeManager = null;
-			GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("PlanetEngine");
-			foreach (GameObject planetEngineObjects in gameObjects) {
-				if (universeManager != null) break;
-				universeManager = (UniverseManager)planetEngineObjects.GetComponent(typeof(UniverseManager));
-			}
-			if (universeManager == null) {
-				GameObject universeObject = new GameObject();
-				universeObject.name = "UniverseManager";
-				universeObject.tag = "PlanetEngine";
-				universeObject.AddComponent<UniverseManager>();
-				//universeObject.hideFlags = HideFlags.HideInHierarchy;
-			}
 			GameObject planet = new GameObject();
 			planet.name = planetName;
 			planet.tag = "PlanetEngine";

@@ -12,12 +12,8 @@ namespace PlanetEngine {
 		}
 
 		void Start() {
-			UniverseManager.universeManager.AddUniverseTransform(this);
+			UniverseManager.universeManager.UpdateTransformList();
 		}
-		void OnDestroy() {
-			UniverseManager.universeManager.RemoveUniverseTransform(this);
-		}
-
 	}
 
 
