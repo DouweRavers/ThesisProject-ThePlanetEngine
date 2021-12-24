@@ -1,12 +1,24 @@
 using UnityEngine;
+using System;
+
 
 namespace PlanetEngine {
+	public struct PlanetData {
+		public readonly Texture2D baseTexture;
+		public readonly Texture2D biomeTexture;
+		public readonly Texture2D heightTexture;
+
+		public PlanetData(Texture2D baseTexture) {
+			this.baseTexture = baseTexture;
+			biomeTexture = TextureGenerator.GenerateBiomeTexture(baseTexture);
+			heightTexture = TextureGenerator.GenerateHeightTexture(baseTexture);
+		}
+	}
+
 	[ExecuteInEditMode]
-	[RequireComponent(typeof(LODGroup))]
-	[RequireComponent(typeof(UniverseTransform))]
 	public class Planet : MonoBehaviour {
-		public int maxDepth = 5;
-		public Material material;
+		public PlanetData data;
+		public int maxDepth = 3;
 		public Transform target;
 		void Awake() {
 			for (int i = 0; i < transform.childCount; i++) {
@@ -15,51 +27,74 @@ namespace PlanetEngine {
 		}
 
 		void Start() {
+			GeneratePlanetData();
 			CreatePlanet();
 		}
 
 		public void CreatePlanet() {
+			GameObject[] LODSpheres = CreateLODSphereMeshes(3);
+			GameObject QuadTree = CreateQuadTree();
 			// Create A LOD group that manages the spherical and Quad tree mesh
-			LOD[] lodArray = new LOD[4];
-			// Create a base mesh to generate the different LOD levels out of.
+			LOD[] lodArray = new LOD[LODSpheres.Length + 1];
+			for (int i = 0; i < lodArray.Length; i++) {
+				lodArray[i].screenRelativeTransitionHeight = 0.8f * Mathf.Pow(1 - ((float)i / LODSpheres.Length), 3);
+				if (i == 0) lodArray[0].renderers = (Renderer[])QuadTree.GetComponentsInChildren<MeshRenderer>();
+				else lodArray[i].renderers = new Renderer[] { (Renderer)LODSpheres[i - 1].GetComponent<MeshRenderer>() };
+			}
+			LODGroup lodComponent = gameObject.GetComponent<LODGroup>();
+			if (lodComponent == null) lodComponent = gameObject.AddComponent<LODGroup>();
+			lodComponent.SetLODs(lodArray);
+			lodComponent.RecalculateBounds();
+		}
+
+		void GeneratePlanetData() {
 			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			// Generate 3 LOD levels
-			for (int i = 0; i < 3; i++) {
-				// Create a object for the current LOD mesh 
+			Texture2D baseTexture = TextureGenerator.GenerateBaseTexture(mesh, new Rect(0, 0, 200, 150)); // texture should be 4 x 3
+			data = new PlanetData(baseTexture);
+		}
+
+		GameObject[] CreateLODSphereMeshes(int count) {
+			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
+
+			GameObject[] LODSpheres = new GameObject[count];
+			for (int i = 0; i < count; i++) {
+				// Create object holding the mesh
 				GameObject meshObject = new GameObject();
-				meshObject.transform.SetParent(transform);
-				meshObject.name = "LODSphere" + i;
+				meshObject.name = gameObject.name + " - LODSphere: " + i;
 				meshObject.tag = "PlanetEngine";
-				MeshRenderer meshRenderer = meshObject.AddComponent<MeshRenderer>();
-				meshRenderer.material = material;
-				MeshFilter meshFilter = meshObject.AddComponent<MeshFilter>();
-				// Increase level of detail of mesh
-				Mesh local_mesh = MeshGenerator.SubdivideGPU(mesh);
+				meshObject.transform.SetParent(transform);
+				LODSpheres[i] = meshObject;
+
+				// Create sphere mesh with certain complexity (subdivisions) 
+				mesh = MeshGenerator.SubdivideGPU(mesh);
+				Mesh local_mesh = Instantiate(mesh);
 				local_mesh = MeshGenerator.SubdivideGPU(local_mesh);
-				mesh = Instantiate(local_mesh); // copy divided cube for next iteration
 				local_mesh = MeshGenerator.NormalizeAndAmplify(local_mesh, 1);
-				//local_mesh = MeshGenerator.OffsetMesh(local_mesh, Vector3.down);
+				local_mesh = MeshGenerator.ApplyHeightmap(local_mesh, data.heightTexture);
 				local_mesh.Optimize();
 				local_mesh.RecalculateBounds();
 				local_mesh.RecalculateNormals();
 				local_mesh.RecalculateTangents();
-				meshFilter.mesh = local_mesh;
-				// Set LOD properties
-				lodArray[3 - i].screenRelativeTransitionHeight = (i == 0 ? 0.01f : (i == 1 ? .1f : 0.3f));
-				lodArray[3 - i].renderers = new Renderer[] { (Renderer)meshRenderer };
+				meshObject.AddComponent<MeshFilter>().mesh = local_mesh;
+
+				// Create material for current mesh
+				Material material = new Material(Shader.Find("Standard"));
+				material.mainTexture = data.biomeTexture;
+				meshObject.AddComponent<MeshRenderer>().sharedMaterial = material;
 			}
-			// Make highest LOD level the Quad trigger
-			lodArray[0].screenRelativeTransitionHeight = 0.99f;
-			// Apply LOD group
-			GetComponent<LODGroup>().SetLODs(lodArray);
-			GetComponent<LODGroup>().RecalculateBounds();
-			// Create the Quad Tree Object te root object will add the renderers to the lodgroup
+			// resort from big to small
+			Array.Reverse(LODSpheres);
+			return LODSpheres;
+		}
+
+		GameObject CreateQuadTree() {
 			GameObject QuadRootObject = new GameObject();
-			QuadRootObject.name = "QuadRoot";
+			QuadRootObject.name = gameObject.name + " - QuadRoot";
 			QuadRootObject.tag = "PlanetEngine";
 			QuadTreeRoot quadTreeRoot = QuadRootObject.AddComponent<QuadTreeRoot>();
 			quadTreeRoot.CreateQuadTree(this);
 			QuadRootObject.transform.SetParent(transform);
+			return QuadRootObject;
 		}
 	}
 }

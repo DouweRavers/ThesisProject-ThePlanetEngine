@@ -24,17 +24,19 @@ namespace PlanetEngine {
 			if (GetComponent<MeshFilter>().sharedMesh == null) {
 				Mesh curvedMesh = Instantiate(planeMesh);
 				curvedMesh = MeshGenerator.NormalizeAndAmplify(curvedMesh, 1);
+				curvedMesh = MeshGenerator.SubdivideGPU(curvedMesh);
+				curvedMesh = MeshGenerator.ApplyHeightmap(curvedMesh, planet.data.heightTexture);
 				curvedMesh.RecalculateBounds();
 				Vector3 localMeshCenter = curvedMesh.bounds.center;
 				curvedMesh = MeshGenerator.OffsetMesh(curvedMesh, -localMeshCenter);
 				transform.position = transform.TransformPoint(localMeshCenter) - transform.parent.position;
 				curvedMesh.RecalculateBounds();
-				curvedMesh = MeshGenerator.SubdivideGPU(curvedMesh);
 				curvedMesh.RecalculateNormals();
 				curvedMesh.RecalculateTangents();
 				curvedMesh.Optimize();
 				GetComponent<MeshFilter>().mesh = curvedMesh;
-				GetComponent<MeshRenderer>().material = planet.material;
+				Material material = new Material(Shader.Find("Standard"));
+				GetComponent<MeshRenderer>().material = material;
 			}
 		}
 
@@ -57,6 +59,7 @@ namespace PlanetEngine {
 				}
 			} else if (targetDistance < GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude) {
 				if (quadDepth == 0) renderer.enabled = true;
+				if (quadDepth == planet.maxDepth) return;
 				if (transform.childCount == 0) CreateChildQuads();
 				divided = true;
 				renderer.enabled = false;
@@ -75,6 +78,7 @@ namespace PlanetEngine {
 			List<Renderer> quadRenderers = new List<Renderer>(lods[0].renderers);
 			for (int i = 0; i < 4; i++) {
 				GameObject submeshObject = new GameObject();
+				submeshObject.name = name + "." + i;
 				submeshObject.transform.SetParent(transform);
 				submeshObject.transform.localPosition = Vector3.zero;
 				submeshObject.transform.localEulerAngles = Vector3.zero;
