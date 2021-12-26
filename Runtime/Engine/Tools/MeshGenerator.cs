@@ -87,10 +87,10 @@ namespace PlanetEngine {
             new Vector3(-0.5f,0.5f,0.5f), // 15 -x,y,z
 
             // BottomFace
-            new Vector3(-0.5f,-0.5f,0.5f), // 16 -x,-y,z
-            new Vector3(-0.5f,-0.5f,-0.5f), // 17 -x,-y,-z
-            new Vector3(0.5f,-0.5f,-0.5f), // 18 x,-y,-z
-            new Vector3(0.5f,-0.5f,0.5f), // 19 x,-y,z
+			new Vector3(0.5f,-0.5f,-0.5f), // 16 x, -y, -z
+			new Vector3(0.5f,-0.5f,0.5f), // 17 x, -y, z
+			new Vector3(-0.5f,-0.5f,0.5f), // 18 -x,-y,z
+            new Vector3(-0.5f,-0.5f,-0.5f), // 19 -x,-y,-z
 
             // BackFace
             new Vector3(-0.5f,-0.5f,-0.5f), // 20 -x,-y,-z
@@ -134,11 +134,12 @@ namespace PlanetEngine {
             new Vector2(2f/4, 2f/3), // 4 x1y0
 
             // BottomFace
+			
             new Vector2(1f/4, 0), // 1 x0y0
             new Vector2(1f/4, 1f/3), // 2 x0y1
             new Vector2(2f/4, 1f/3), // 3 x1y1
             new Vector2(2f/4, 0), // 4 x1y0
-
+            
             // BackFace
             new Vector2(3f/4, 1f/3), // 1 x0y0
             new Vector2(3f/4, 2f/3), // 2 x0y1
@@ -439,6 +440,22 @@ namespace PlanetEngine {
 				meshes[i].uv = uvsArrays[i].ToArray();
 			}
 			return meshes;
+		}
+		public static Mesh ApplyHeightmap(Mesh mesh, Texture2D heigtmap) {
+			Vector3[] vertices = mesh.vertices;
+			for (int i = 0; i < mesh.vertexCount; i++) {
+				Vector3 vertex = vertices[i];
+				Vector2 uv = mesh.uv[i];
+				int x = 0, y = 0;
+				if (uv.x > 1f / 3) x = Mathf.FloorToInt(uv.x * heigtmap.width) - 1;
+				else x = Mathf.CeilToInt(uv.x * heigtmap.width);
+				if (uv.y > 0.5f) y = Mathf.FloorToInt(uv.y * heigtmap.height) - 1;
+				else y = Mathf.CeilToInt(uv.y * heigtmap.height);
+				float height = heigtmap.GetPixel(x, y).r;
+				if (height > 0.5f) vertices[i] = vertex * (0.5f + height);
+			}
+			mesh.vertices = vertices;
+			return mesh;
 		}
 	}
 }

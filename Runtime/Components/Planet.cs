@@ -3,29 +3,25 @@ using System;
 
 
 namespace PlanetEngine {
-	struct PlanetData {
+	public struct PlanetData {
 		public Texture2D baseTexture;
-		public Texture2D biomeTexture;
 		public Texture2D heightTexture;
+		public Texture2D biomeTexture;
+		public Texture2D terrainColorTexture;
 
 		public PlanetData(Texture2D baseTexture) {
 			this.baseTexture = baseTexture;
-			biomeTexture = TextureGenerator.GenerateBiomeTexture(baseTexture);
-			heightTexture = TextureGenerator.GenerateHeightTexture(baseTexture, biomeTexture);
+			heightTexture = TextureTool.GenerateHeightTexture(baseTexture);
+			biomeTexture = TextureTool.GenerateBiomeTexture(baseTexture, heightTexture);
+			terrainColorTexture = TextureTool.GenerateTerrainColorTexture(biomeTexture, heightTexture);
 		}
 	}
 
 	[ExecuteInEditMode]
 	public class Planet : MonoBehaviour {
-		PlanetData data;
+		public PlanetData data;
 		public int maxDepth = 3;
 		public Transform target;
-		void Awake() {
-			for (int i = 0; i < transform.childCount; i++) {
-				DestroyImmediate(transform.GetChild(i).gameObject);
-			}
-		}
-
 		void Start() {
 			GeneratePlanetData();
 			CreatePlanet();
@@ -49,7 +45,7 @@ namespace PlanetEngine {
 
 		void GeneratePlanetData() {
 			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			Texture2D baseTexture = TextureGenerator.GenerateBaseTexture(mesh, new Rect(0, 0, 200, 150)); // texture should be 4 x 3
+			Texture2D baseTexture = TextureTool.GenerateBaseTexture(mesh, new Rect(0, 0, 100, 75)); // texture should be 4 x 3
 			data = new PlanetData(baseTexture);
 		}
 
@@ -70,6 +66,7 @@ namespace PlanetEngine {
 				Mesh local_mesh = Instantiate(mesh);
 				local_mesh = MeshGenerator.SubdivideGPU(local_mesh);
 				local_mesh = MeshGenerator.NormalizeAndAmplify(local_mesh, 1);
+				local_mesh = MeshGenerator.ApplyHeightmap(local_mesh, data.heightTexture);
 				local_mesh.Optimize();
 				local_mesh.RecalculateBounds();
 				local_mesh.RecalculateNormals();
@@ -78,7 +75,7 @@ namespace PlanetEngine {
 
 				// Create material for current mesh
 				Material material = new Material(Shader.Find("Standard"));
-				material.mainTexture = data.heightTexture;
+				material.mainTexture = data.terrainColorTexture;
 				meshObject.AddComponent<MeshRenderer>().sharedMaterial = material;
 			}
 			// resort from big to small

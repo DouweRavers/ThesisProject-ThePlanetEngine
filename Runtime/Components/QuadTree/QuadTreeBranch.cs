@@ -24,17 +24,19 @@ namespace PlanetEngine {
 			if (GetComponent<MeshFilter>().sharedMesh == null) {
 				Mesh curvedMesh = Instantiate(planeMesh);
 				curvedMesh = MeshGenerator.NormalizeAndAmplify(curvedMesh, 1);
+				curvedMesh = MeshGenerator.SubdivideGPU(curvedMesh);
+				curvedMesh = MeshGenerator.ApplyHeightmap(curvedMesh, planet.data.heightTexture);
 				curvedMesh.RecalculateBounds();
 				Vector3 localMeshCenter = curvedMesh.bounds.center;
 				curvedMesh = MeshGenerator.OffsetMesh(curvedMesh, -localMeshCenter);
 				transform.position = transform.TransformPoint(localMeshCenter) - transform.parent.position;
 				curvedMesh.RecalculateBounds();
-				curvedMesh = MeshGenerator.SubdivideGPU(curvedMesh);
 				curvedMesh.RecalculateNormals();
 				curvedMesh.RecalculateTangents();
 				curvedMesh.Optimize();
 				GetComponent<MeshFilter>().mesh = curvedMesh;
 				Material material = new Material(Shader.Find("Standard"));
+				material.mainTexture = planet.data.terrainColorTexture;
 				GetComponent<MeshRenderer>().material = material;
 			}
 		}
