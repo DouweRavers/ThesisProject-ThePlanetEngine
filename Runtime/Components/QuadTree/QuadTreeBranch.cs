@@ -36,6 +36,7 @@ namespace PlanetEngine {
 				curvedMesh.Optimize();
 				GetComponent<MeshFilter>().mesh = curvedMesh;
 				Material material = new Material(Shader.Find("Standard"));
+				material.mainTexture = planet.data.terrainColorTexture;
 				GetComponent<MeshRenderer>().material = material;
 			}
 		}

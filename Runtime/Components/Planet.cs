@@ -4,14 +4,16 @@ using System;
 
 namespace PlanetEngine {
 	public struct PlanetData {
-		public readonly Texture2D baseTexture;
-		public readonly Texture2D biomeTexture;
-		public readonly Texture2D heightTexture;
+		public Texture2D baseTexture;
+		public Texture2D heightTexture;
+		public Texture2D biomeTexture;
+		public Texture2D terrainColorTexture;
 
 		public PlanetData(Texture2D baseTexture) {
 			this.baseTexture = baseTexture;
-			biomeTexture = TextureGenerator.GenerateBiomeTexture(baseTexture);
-			heightTexture = TextureGenerator.GenerateHeightTexture(baseTexture);
+			heightTexture = TextureTool.GenerateHeightTexture(baseTexture);
+			biomeTexture = TextureTool.GenerateBiomeTexture(baseTexture, heightTexture);
+			terrainColorTexture = TextureTool.GenerateTerrainColorTexture(biomeTexture, heightTexture);
 		}
 	}
 
@@ -20,12 +22,6 @@ namespace PlanetEngine {
 		public PlanetData data;
 		public int maxDepth = 3;
 		public Transform target;
-		void Awake() {
-			for (int i = 0; i < transform.childCount; i++) {
-				DestroyImmediate(transform.GetChild(i).gameObject);
-			}
-		}
-
 		void Start() {
 			GeneratePlanetData();
 			CreatePlanet();
@@ -49,7 +45,7 @@ namespace PlanetEngine {
 
 		void GeneratePlanetData() {
 			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			Texture2D baseTexture = TextureGenerator.GenerateBaseTexture(mesh, new Rect(0, 0, 200, 150)); // texture should be 4 x 3
+			Texture2D baseTexture = TextureTool.GenerateBaseTexture(mesh, new Rect(0, 0, 100, 75)); // texture should be 4 x 3
 			data = new PlanetData(baseTexture);
 		}
 
@@ -79,7 +75,7 @@ namespace PlanetEngine {
 
 				// Create material for current mesh
 				Material material = new Material(Shader.Find("Standard"));
-				material.mainTexture = data.biomeTexture;
+				material.mainTexture = data.terrainColorTexture;
 				meshObject.AddComponent<MeshRenderer>().sharedMaterial = material;
 			}
 			// resort from big to small

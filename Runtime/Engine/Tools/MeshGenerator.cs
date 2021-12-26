@@ -451,7 +451,8 @@ namespace PlanetEngine {
 				else x = Mathf.CeilToInt(uv.x * heigtmap.width);
 				if (uv.y > 0.5f) y = Mathf.FloorToInt(uv.y * heigtmap.height) - 1;
 				else y = Mathf.CeilToInt(uv.y * heigtmap.height);
-				vertices[i] = vertex * (1 + 0.5f * heigtmap.GetPixel(x, y).r);
+				float height = heigtmap.GetPixel(x, y).r;
+				if (height > 0.5f) vertices[i] = vertex * (0.5f + height);
 			}
 			mesh.vertices = vertices;
 			return mesh;
