@@ -4,24 +4,7 @@ namespace PlanetEngine {
 
 
 	//internal
-	public class MeshGenerator : ScriptableObject {
-		public ComputeShader meshShader;
-
-		#region Singleton
-		// This class only exist once in the editor.
-		private static MeshGenerator instance = null;
-		private static readonly object padlock = new object();
-		public static MeshGenerator singleton {
-			get {
-				lock (padlock) {
-					if (instance == null) {
-						instance = CreateInstance<MeshGenerator>();
-					}
-					return instance;
-				}
-			}
-		}
-		#endregion
+	public static class MeshGenerator {
 
 		/*###########################################
 		  #           Primitive Meshes              #
