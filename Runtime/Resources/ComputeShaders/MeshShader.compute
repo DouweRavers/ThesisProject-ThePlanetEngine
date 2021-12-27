@@ -1,28 +1,10 @@
-// Each #kernel tells which function to compile; you can have many kernels
-//#pragma enable_d3d11_debug_symbols
+#pragma enable_d3d11_debug_symbols
 #pragma kernel NormalizeAndAmplify
-#pragma kernel SubdivideMesh
 #pragma kernel Offset
+#pragma kernel SubdivideMesh
+#pragma kernel ApplyHeightmap
 
-// Mesh Buffers
-RWStructuredBuffer<float3> vertice_array;
-
-// Convert shape to sphere
-float amplifier;
-
-[numthreads(16,1,1)]
-void NormalizeAndAmplify(uint3 id : SV_DispatchThreadID)
-{
-    vertice_array[id.x] = amplifier * normalize(vertice_array[id.x]);
-}
-
-// Subdivide mesh 
-//          A
-//	A       |  
-//	|  =>   Z-X
-//	C-B     | |  
-//          C-Y-B
-
+// Batching values
 int batch;
 int maximum;
 
@@ -35,7 +17,41 @@ RWStructuredBuffer<int> new_index_array;
 RWStructuredBuffer<float3> new_vertice_array;
 RWStructuredBuffer<float2> new_uv_array;
 
-[numthreads(6, 1, 1)]
+// Convert shape to sphere with given size
+float amplifier;
+
+[numthreads(1,1,1)]
+void NormalizeAndAmplify(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+    	new_vertice_array[i] = amplifier * normalize(old_vertice_array[i]);
+	}
+}
+
+// Translate vertices in local space (in mesh data)  
+float3 offset_vector;
+
+[numthreads(1,1,1)]
+void Offset(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		new_vertice_array[i] = old_vertice_array[i] + offset_vector;
+	}
+}
+
+
+// Subdivide mesh 
+//          A
+//	A       |  
+//	|  =>   Z-X
+//	C-B     | |  
+//          C-Y-B
+
+[numthreads(3, 1, 1)]
 void SubdivideMesh(uint3 id : SV_DispatchThreadID)
 {
 	int index = (int) id.x;
@@ -101,5 +117,25 @@ void SubdivideMesh(uint3 id : SV_DispatchThreadID)
 		new_index_array[i_base + 9] = i_z;
 		new_index_array[i_base + 10] = i_x;
 		new_index_array[i_base + 11] = i_y;
+	}
+}
+
+
+Texture2D<float4> heigtmap;
+int map_width;
+int map_height;
+
+[numthreads(1,1,1)]
+void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		float2 uv = old_uv_array[i];
+		uv.x *= map_width;
+		uv.y *= map_height;
+		float height = heigtmap[uv].r;
+		if(height > 0.5f) new_vertice_array[i] = old_vertice_array[i] * (0.5f + height);
+		else new_vertice_array[i] = old_vertice_array[i];
 	}
 }

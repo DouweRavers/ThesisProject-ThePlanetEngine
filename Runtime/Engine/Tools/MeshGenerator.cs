@@ -1,7 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
-namespace PlanetEngine {
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Mathematics;
+using Unity.Collections;
 
+namespace PlanetEngine {
 
 	//internal
 	public static class MeshGenerator {
@@ -313,27 +317,29 @@ namespace PlanetEngine {
 			ComputeBuffer newVertexBuffer = new ComputeBuffer(indexes.Length * 2, sizeof(float) * 3);
 			ComputeBuffer newUvBuffer = new ComputeBuffer(indexes.Length * 2, sizeof(float) * 2);
 
-			int kernelIndex = singleton.meshShader.FindKernel("SubdivideMesh");
+			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			if (meshShader == null) Debug.LogWarning("No shader loaded");
+			int kernelIndex = meshShader.FindKernel("SubdivideMesh");
 
-			singleton.meshShader.SetBuffer(kernelIndex, "old_index_array", oldIndexBuffer);
-			singleton.meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
-			singleton.meshShader.SetBuffer(kernelIndex, "old_uv_array", oldUvBuffer);
+			meshShader.SetBuffer(kernelIndex, "old_index_array", oldIndexBuffer);
+			meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
+			meshShader.SetBuffer(kernelIndex, "old_uv_array", oldUvBuffer);
 
-			singleton.meshShader.SetBuffer(kernelIndex, "new_index_array", newIndexBuffer);
-			singleton.meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
-			singleton.meshShader.SetBuffer(kernelIndex, "new_uv_array", newUvBuffer);
+			meshShader.SetBuffer(kernelIndex, "new_index_array", newIndexBuffer);
+			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
+			meshShader.SetBuffer(kernelIndex, "new_uv_array", newUvBuffer);
 
-			int threads = Mathf.RoundToInt(indexes.Length / 3);
-			singleton.meshShader.SetInt("maximum", threads);
+			int threads = Mathf.RoundToInt(indexes.Length / 3f);
+			meshShader.SetInt("maximum", threads);
 			if (60000 < threads) {
-				int factor = Mathf.CeilToInt(threads / 60000);
-				singleton.meshShader.SetInt("batch", factor);
+				int factor = Mathf.CeilToInt(threads / 60000f);
+				meshShader.SetInt("batch", factor);
 				threads = 60000;
 			} else {
-				singleton.meshShader.SetInt("batch", 1);
+				meshShader.SetInt("batch", 1);
 			}
 
-			singleton.meshShader.Dispatch(kernelIndex, threads, 1, 1);
+			meshShader.Dispatch(kernelIndex, threads, 1, 1);
 			Vector3[] newVerices = new Vector3[indexes.Length * 2];
 			newVertexBuffer.GetData(newVerices);
 			Vector2[] newUV = new Vector2[indexes.Length * 2];
@@ -357,25 +363,70 @@ namespace PlanetEngine {
 
 		public static Mesh NormalizeAndAmplify(Mesh mesh, float gain) {
 			Vector3[] vertices = mesh.vertices;
-			ComputeBuffer vertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
-			vertexBuffer.SetData(vertices);
 
-			int kernelIndex = singleton.meshShader.FindKernel("NormalizeAndAmplify");
-			singleton.meshShader.SetFloat("amplifier", gain);
-			singleton.meshShader.SetBuffer(kernelIndex, "vertice_array", vertexBuffer);
-			singleton.meshShader.Dispatch(kernelIndex, vertices.Length / 16, 1, 1);
-			vertexBuffer.GetData(vertices);
-			vertexBuffer.Dispose();
+			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			if (meshShader == null) Debug.LogWarning("No shader loaded");
+
+			int kernelIndex = meshShader.FindKernel("NormalizeAndAmplify");
+			// Pass vertices
+			ComputeBuffer oldVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+			oldVertexBuffer.SetData(vertices);
+			meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
+			ComputeBuffer newVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
+			// Pass gain
+			meshShader.SetFloat("amplifier", gain);
+			// Pass batch size
+			int threads = Mathf.RoundToInt(vertices.Length);
+			meshShader.SetInt("maximum", threads);
+			Debug.Log("Max: " + threads);
+			if (60000 < threads) {
+				int factor = Mathf.CeilToInt(threads / 60000f);
+				meshShader.SetInt("batch", factor);
+				threads = 60000;
+			} else {
+				meshShader.SetInt("batch", 1);
+			}
+			meshShader.Dispatch(kernelIndex, threads, 1, 1);
+
+			newVertexBuffer.GetData(vertices);
+			oldVertexBuffer.Dispose();
+			newVertexBuffer.Dispose();
 			mesh.vertices = vertices;
 
 			return mesh;
 		}
 
-		public static Mesh OffsetMesh(Mesh mesh, Vector3 vector) {
+		public static Mesh OffsetMesh(Mesh mesh, Vector3 offset) {
 			Vector3[] vertices = mesh.vertices;
-			for (int i = 0; i < vertices.Length; i++) {
-				vertices[i] += vector;
+
+			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			if (meshShader == null) Debug.LogWarning("No shader loaded");
+
+			int kernelIndex = meshShader.FindKernel("Offset");
+			// Pass vertices to shader
+			ComputeBuffer oldVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+			oldVertexBuffer.SetData(vertices);
+			meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
+			ComputeBuffer newVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
+			// Pass offset to shader
+			meshShader.SetFloats("offset_vector", new float[] { offset.x, offset.y, offset.z });
+			// Pass batch size to shader
+			int threads = Mathf.RoundToInt(vertices.Length);
+			meshShader.SetInt("maximum", threads);
+			if (60000 < threads) {
+				int factor = Mathf.CeilToInt(threads / 60000f);
+				meshShader.SetInt("batch", factor);
+				threads = 60000;
+			} else {
+				meshShader.SetInt("batch", 1);
 			}
+			meshShader.Dispatch(kernelIndex, threads, 1, 1);
+
+			newVertexBuffer.GetData(vertices);
+			oldVertexBuffer.Dispose();
+			newVertexBuffer.Dispose();
 			mesh.vertices = vertices;
 			return mesh;
 		}
@@ -424,21 +475,53 @@ namespace PlanetEngine {
 			}
 			return meshes;
 		}
+
 		public static Mesh ApplyHeightmap(Mesh mesh, Texture2D heigtmap) {
 			Vector3[] vertices = mesh.vertices;
-			for (int i = 0; i < mesh.vertexCount; i++) {
-				Vector3 vertex = vertices[i];
-				Vector2 uv = mesh.uv[i];
-				int x = 0, y = 0;
-				if (uv.x > 1f / 3) x = Mathf.FloorToInt(uv.x * heigtmap.width) - 1;
-				else x = Mathf.CeilToInt(uv.x * heigtmap.width);
-				if (uv.y > 0.5f) y = Mathf.FloorToInt(uv.y * heigtmap.height) - 1;
-				else y = Mathf.CeilToInt(uv.y * heigtmap.height);
-				float height = heigtmap.GetPixel(x, y).r;
-				if (height > 0.5f) vertices[i] = vertex * (0.5f + height);
+			Vector2[] uvs = mesh.uv;
+
+			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			if (meshShader == null) Debug.LogWarning("No shader loaded");
+
+			int kernelIndex = meshShader.FindKernel("ApplyHeightmap");
+			// Pass vertices to shader
+			ComputeBuffer oldVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+			oldVertexBuffer.SetData(vertices);
+			meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
+			ComputeBuffer oldUVBuffer = new ComputeBuffer(uvs.Length, sizeof(float) * 2);
+			oldUVBuffer.SetData(uvs);
+			meshShader.SetBuffer(kernelIndex, "old_uv_array", oldUVBuffer);
+
+
+			ComputeBuffer newVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
+			// Pass offset to shader
+			meshShader.SetTexture(kernelIndex, "heigtmap", heigtmap);
+			meshShader.SetInt("map_width", heigtmap.width);
+			meshShader.SetInt("map_height", heigtmap.height);
+			// Pass batch size to shader
+			int threads = Mathf.RoundToInt(vertices.Length);
+			meshShader.SetInt("maximum", threads);
+			if (60000 < threads) {
+				int factor = Mathf.CeilToInt(threads / 60000f);
+				meshShader.SetInt("batch", factor);
+				threads = 60000;
+			} else {
+				meshShader.SetInt("batch", 1);
 			}
+			meshShader.Dispatch(kernelIndex, threads, 1, 1);
+
+			newVertexBuffer.GetData(vertices);
+			oldVertexBuffer.Dispose();
+			oldUVBuffer.Dispose();
+			newVertexBuffer.Dispose();
 			mesh.vertices = vertices;
 			return mesh;
 		}
 	}
+
+
+
 }
+
+

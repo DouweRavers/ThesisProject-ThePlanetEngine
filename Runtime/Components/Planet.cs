@@ -20,7 +20,7 @@ namespace PlanetEngine {
 	[ExecuteInEditMode]
 	public class Planet : MonoBehaviour {
 		public PlanetData data;
-		public int maxDepth = 3;
+		public int maxDepth = 3, maxLOD = 4;
 		public Transform target;
 		void Start() {
 			GeneratePlanetData();
@@ -28,7 +28,7 @@ namespace PlanetEngine {
 		}
 
 		public void CreatePlanet() {
-			GameObject[] LODSpheres = CreateLODSphereMeshes(3);
+			GameObject[] LODSpheres = CreateLODSphereMeshes(maxLOD);
 			GameObject QuadTree = CreateQuadTree();
 			// Create A LOD group that manages the spherical and Quad tree mesh
 			LOD[] lodArray = new LOD[LODSpheres.Length + 1];
@@ -45,7 +45,7 @@ namespace PlanetEngine {
 
 		void GeneratePlanetData() {
 			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			Texture2D baseTexture = TextureTool.GenerateBaseTexture(mesh, new Rect(0, 0, 100, 75)); // texture should be 4 x 3
+			Texture2D baseTexture = TextureTool.GenerateBaseTexture(mesh, new Rect(0, 0, 50, 37)); // texture should be 4 x 3
 			data = new PlanetData(baseTexture);
 		}
 
