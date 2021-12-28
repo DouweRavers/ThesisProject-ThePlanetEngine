@@ -1,13 +1,44 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateBaseTexture
 
+// Texture data
+uint height;
+uint width;
+
+// Output
+RWTexture2D<float4> out_texture;
+
 [numthreads(1,1,1)]
 void GenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 {
-	int index = (int) id.x;
-	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
-	{
-    	new_vertice_array[i] = amplifier * normalize(old_vertice_array[i]);
+	uint x = id.x;
+	uint y = id.y;
+	float4 value = 0;
+	if(y < height / 3) {
+		value.y = 0;
+		value.z = 3 * ((float)y) / height;
+	} else if (y < 2 * height / 3) {
+		value.y = 3 * ((float)y) / height - 1;
+	} else{
+		value.y = 1;
+		value.z = 3 * (1 - ((float)y) / height);
 	}
-}
 
+	if(x < width/4){
+		value.x = 1;
+		value.z = 4 * ((float) x) / width;
+	} else if(x < width/2){
+		value.x = 2 - 4 * ((float) x) / width;
+	} else if(x < 3*width/4){
+		value.x = 0;
+		value.z = 3 - 4 * ((float) x) / width;
+	} else {
+		value.x = 4 * ((float) x) / width - 3;
+	}
+
+	if(x >= width/4 && x < width/2 && y >= height/3 && y < 2*height/3){
+		value.z = 1;
+	}
+	value.a = 1;
+	out_texture[id.xy] = normalize(value);
+}

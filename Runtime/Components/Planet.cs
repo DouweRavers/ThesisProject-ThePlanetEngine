@@ -45,7 +45,7 @@ namespace PlanetEngine {
 
 		void GeneratePlanetData() {
 			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			Texture2D baseTexture = TextureTool.GenerateBaseTexture(mesh, new Rect(0, 0, 50, 37)); // texture should be 4 x 3
+			Texture2D baseTexture = TextureTool.GenerateBaseTextureGPU(100, 75); // texture should be 4 x 3
 			data = new PlanetData(baseTexture);
 		}
 
