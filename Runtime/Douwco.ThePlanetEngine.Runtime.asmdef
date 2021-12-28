@@ -1,7 +1,11 @@
 {
     "name": "Douwco.ThePlanetEngine.Runtime",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "Unity.Burst",
+        "Unity.Mathematics",
+        "Unity.Collections"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

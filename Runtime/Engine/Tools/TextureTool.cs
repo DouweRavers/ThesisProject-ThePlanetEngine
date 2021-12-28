@@ -5,23 +5,16 @@ using UnityEngine;
 namespace PlanetEngine {
 	/*internal*/
 	public static class TextureTool {
-		public static ComputeShader textureShader;
-		static bool initialized = false;
-		static void Initialize() {
-			if (initialized) return;
-			initialized = true;
-		}
 
 		// Generates a base texture on which all textures base. This method will take a mesh with UV coordinates and generate a
 		// Texture that maps all (normalized) vector values as RGB values by interpolating between two given vertices.
 		// The A value is the magnitude of the vector
-		public static Texture2D GenerateBaseTexture(Mesh mesh, Rect size) {
-			Initialize();
+		public static Texture2D GenerateBaseTextureCPU(Mesh mesh, Rect size) {
 			Texture2D baseTexture = new Texture2D(Mathf.RoundToInt(size.width), Mathf.RoundToInt(size.height), TextureFormat.RGBAFloat, false);
 			baseTexture.filterMode = FilterMode.Point;
 			for (int x = 0; x < baseTexture.width; x++) {
 				for (int y = 0; y < baseTexture.height; y++) {
-					baseTexture.SetPixel(x, y, new Color(1, 1, 1, -1));
+					baseTexture.SetPixel(x, y, new Color(0, 0, 0, -1));
 				}
 			}
 			for (int i = 0; i < mesh.triangles.Length; i += 6) {
@@ -56,8 +49,26 @@ namespace PlanetEngine {
 			return baseTexture;
 		}
 
+		public static Texture2D GenerateBaseTextureGPU(int width, int height) {
+			ComputeShader textureShader = Resources.Load<ComputeShader>("ComputeShaders/TextureShader");
+			if (textureShader == null) Debug.LogWarning("No shader loaded");
+			int kernelIndex = textureShader.FindKernel("GenerateBaseTexture");
+
+			RenderTexture baseTexture = new RenderTexture(width, height, 24); //, TextureFormat.RGBAFloat, false);
+			baseTexture.enableRandomWrite = true;
+			baseTexture.Create();
+			textureShader.SetTexture(kernelIndex, "out_texture", baseTexture);
+			textureShader.SetInt("width", width);
+			textureShader.SetInt("height", height);
+			textureShader.Dispatch(kernelIndex, width, height, 1);
+			Texture2D outputTexture = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
+			RenderTexture.active = baseTexture;
+			outputTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+			outputTexture.Apply();
+			return outputTexture;
+		}
+
 		public static Texture2D GenerateBiomeTexture(Texture2D baseTexture, Texture2D heigtMap) {
-			Initialize();
 			System.Random random = new System.Random();
 			Vector3[] points = new Vector3[baseTexture.width];
 			Biomes[] biomes = new Biomes[points.Length];
@@ -107,7 +118,6 @@ namespace PlanetEngine {
 		}
 
 		public static Texture2D GenerateHeightTexture(Texture2D baseTexture) {
-			Initialize();
 			Texture2D heigtTexture = new Texture2D(baseTexture.width, baseTexture.height);
 			heigtTexture.filterMode = FilterMode.Point;
 			Perlin.Seed = Mathf.RoundToInt(Time.timeSinceLevelLoad);
@@ -126,7 +136,6 @@ namespace PlanetEngine {
 			return heigtTexture;
 		}
 		public static Texture2D GenerateTerrainColorTexture(Texture2D biomeTexture, Texture2D heigtMap) {
-			Initialize();
 			Texture2D terrainTexture = new Texture2D(biomeTexture.width, biomeTexture.height);
 			terrainTexture.filterMode = FilterMode.Point;
 			for (int x = 0; x < biomeTexture.width; x++) {

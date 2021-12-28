@@ -1,0 +1,3 @@
+[submodule "Runtime/Resources/ComputeShaders/webgl-noise"]
+	path = Runtime/Resources/ComputeShaders/webgl-noise
+	url = https://github.com/stegu/webgl-noise.git
