@@ -12,7 +12,8 @@ using UnityEngine;
 
 namespace PlanetEngine {
 
-	public class PlanetEngine : ScriptableObject {
+	public static class PlanetEngine {
+		public static readonly string rootPath = "Assets/ThesisProject-ThePlanetEngine/"; // "Packages/com.douwco.theplanetengine/"
 		public static GameObject CreatePlanet(string planetName) {
 			GameObject planet = new GameObject();
 			planet.name = planetName;

@@ -50,7 +50,7 @@ namespace PlanetEngine {
 							new Vector2(2f/4, 1f/3), // 3 x1y1
 							new Vector2(2f/4, 0), // 4 x1y0
 						});
-						rootBranchObjects[1].transform.eulerAngles = new Vector3(180, 0, 0);
+						rootBranchObjects[1].transform.eulerAngles = new Vector3(180, 180, 0);
 						break;
 					case 2:
 						mesh = MeshGenerator.GenerateUnitQuadMesh(new Vector2[] {
