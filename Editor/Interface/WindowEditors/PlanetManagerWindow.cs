@@ -18,6 +18,10 @@ namespace PlanetEngine {
 
 		void OnGUI() {
 			GUIheader();
+			if (GUILayout.Button("Create planet")) {
+				PlanetEngineEditor.CreatePlanet("Planet");
+			}
+
 			GUILayout.Label(" ", GUILayout.ExpandHeight(true));
 			GUIfooter();
 		}

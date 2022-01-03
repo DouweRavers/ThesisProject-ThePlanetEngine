@@ -121,9 +121,10 @@ void SubdivideMesh(uint3 id : SV_DispatchThreadID)
 }
 
 
-Texture2D<float4> heigtmap;
-int map_width;
-int map_height;
+Texture2D<float4> heightmap;
+int width;
+int height;
+float radius;
 
 [numthreads(1,1,1)]
 void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
@@ -132,10 +133,13 @@ void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
 	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
 	{
 		float2 uv = old_uv_array[i];
-		uv.x *= map_width;
-		uv.y *= map_height;
-		float height = heigtmap[uv].r;
-		if(height > 0.5f) new_vertice_array[i] = old_vertice_array[i] * (0.5f + height);
-		else new_vertice_array[i] = old_vertice_array[i];
+		int x = 0, y = 0;
+		if(uv.x < 0.3) x = ceil(width * uv.x) + 1;
+		else x = floor(width * uv.x) - 1;
+		if(uv.y < 0.5) y = ceil(height * uv.y) + 1;
+		else y = ceil(height * uv.y) - 1;
+		int2 coordinates = int2(x, y);
+		float height = heightmap[coordinates].r;
+		new_vertice_array[i] = normalize(old_vertice_array[i]) * radius * (1 + height * 0.1);
 	}
 }

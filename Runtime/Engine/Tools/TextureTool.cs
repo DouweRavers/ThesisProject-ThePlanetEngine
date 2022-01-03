@@ -1,6 +1,8 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Mathematics;
+using Unity.Collections;
 
 namespace PlanetEngine {
 	/*internal*/
@@ -54,21 +56,22 @@ namespace PlanetEngine {
 			if (textureShader == null) Debug.LogWarning("No shader loaded");
 			int kernelIndex = textureShader.FindKernel("GenerateBaseTexture");
 
-			RenderTexture baseTexture = new RenderTexture(width, height, 24); //, TextureFormat.RGBAFloat, false);
+			RenderTexture baseTexture = new RenderTexture(width, height, 24);
 			baseTexture.enableRandomWrite = true;
 			baseTexture.Create();
-			textureShader.SetTexture(kernelIndex, "out_texture", baseTexture);
+			textureShader.SetTexture(kernelIndex, "base_texture_out", baseTexture);
 			textureShader.SetInt("width", width);
 			textureShader.SetInt("height", height);
 			textureShader.Dispatch(kernelIndex, width, height, 1);
 			Texture2D outputTexture = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
+			outputTexture.filterMode = FilterMode.Point;
 			RenderTexture.active = baseTexture;
 			outputTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
 			outputTexture.Apply();
 			return outputTexture;
 		}
 
-		public static Texture2D GenerateBiomeTexture(Texture2D baseTexture, Texture2D heigtMap) {
+		public static Texture2D GenerateBiomeTextureCPU(Texture2D baseTexture, Texture2D heigtMap) {
 			System.Random random = new System.Random();
 			Vector3[] points = new Vector3[baseTexture.width];
 			Biomes[] biomes = new Biomes[points.Length];
@@ -81,7 +84,7 @@ namespace PlanetEngine {
 				float heigt = heigtMap.GetPixel(randomX, randomY).r;
 				if (points[i].y > 0.9f || points[i].y < -0.9f) biomes[i] = Biomes.SNOW;
 				else {
-					if (points[i].y < 0.3f && points[i].y > -0.3f) biomes[i] = Biomes.DESERT;
+					if (points[i].y < 0.1f && points[i].y > -0.1f) biomes[i] = Biomes.DESERT;
 					else biomes[i] = Biomes.GRASS;
 				}
 			}
@@ -90,8 +93,9 @@ namespace PlanetEngine {
 			vonoroiTexture.filterMode = FilterMode.Point;
 			for (int x = 0; x < baseTexture.width; x++) {
 				for (int y = 0; y < baseTexture.height; y++) {
+					vonoroiTexture.SetPixel(x, y, Color.black);
 					Color positionColor = baseTexture.GetPixel(x, y);
-					if (positionColor.a < 0) continue;
+					if (positionColor.a == 0) continue;
 					float minimumDistance = baseTexture.width + baseTexture.height;
 					float secondMinimumDistance = baseTexture.width + baseTexture.height;
 					Biomes closest = Biomes.OCEAN, secondClosest = Biomes.OCEAN;
@@ -110,11 +114,85 @@ namespace PlanetEngine {
 							}
 						}
 					}
-					vonoroiTexture.SetPixel(x, y, new Color((float)closest / 4f, (float)secondClosest / 4f, (secondMinimumDistance - minimumDistance) / secondMinimumDistance, 0));
+					vonoroiTexture.SetPixel(x, y, new Color((float)closest / 4f, (float)secondClosest / 4f, (secondMinimumDistance - minimumDistance) / secondMinimumDistance, 1));
 				}
 			}
 			vonoroiTexture.Apply();
 			return vonoroiTexture;
+		}
+
+		public static Texture2D GenerateBiomeTextureGPU(Texture2D baseTexture, int points) {
+			// Select random points for vonoroi algorithm
+
+			// use multithreading (unity jobs - DOTS) to fastly generate many points
+			NativeArray<Color> baseTextureBuffer = baseTexture.GetRawTextureData<Color>();
+			NativeArray<float3> vonoroiPoints = new NativeArray<float3>(points, Allocator.TempJob);
+			GenerateVonoroiPointsJob vonoroiPointsJob = new GenerateVonoroiPointsJob() {
+				baseSeed = Time.frameCount * 10,
+				height = baseTexture.height,
+				width = baseTexture.width,
+				baseTexture = baseTextureBuffer,
+				vonoroiPoints = vonoroiPoints,
+			};
+			vonoroiPointsJob.Schedule(points, 1).Complete();
+			// Once points are chosen create texture for the different biomes using GPU 
+
+			ComputeShader textureShader = Resources.Load<ComputeShader>("ComputeShaders/TextureShader");
+			if (textureShader == null) Debug.LogWarning("No shader loaded");
+			int kernelIndex = textureShader.FindKernel("GenerateBiomeTexture");
+			// Create new texture with R8 type (int of 8bytes = 255 biomes types)
+			RenderTexture biomeRenderTexture = new RenderTexture(baseTexture.width, baseTexture.height, 24);
+			biomeRenderTexture.enableRandomWrite = true;
+			biomeRenderTexture.filterMode = FilterMode.Point;
+			biomeRenderTexture.Create();
+			textureShader.SetTexture(kernelIndex, "biome_texture_out", biomeRenderTexture);
+			// input base texture for vertex data
+			textureShader.SetTexture(kernelIndex, "base_texture", baseTexture);
+			textureShader.SetInt("width", baseTexture.width);
+			textureShader.SetInt("height", baseTexture.height);
+			// input vonoroi points 
+			ComputeBuffer vonoroiPointsBuffer = new ComputeBuffer(vonoroiPoints.Length, 3 * sizeof(float));
+			vonoroiPointsBuffer.SetData(vonoroiPoints);
+			textureShader.SetBuffer(kernelIndex, "vonoroi_points", vonoroiPointsBuffer);
+			textureShader.SetInt("vonoroi_point_count", vonoroiPoints.Length);
+			// Perform calculation on GPU
+			textureShader.Dispatch(kernelIndex, baseTexture.width, baseTexture.height, 1);
+			// Receive output
+			Texture2D biomeTexture = new Texture2D(biomeRenderTexture.width, biomeRenderTexture.height);
+			biomeTexture.filterMode = FilterMode.Point;
+			RenderTexture.active = biomeRenderTexture;
+			biomeTexture.ReadPixels(new Rect(0, 0, biomeRenderTexture.width, biomeRenderTexture.height), 0, 0, false);
+			RenderTexture.active = null;
+			biomeTexture.Apply();
+			// Free up unmanaged memory
+			baseTextureBuffer.Dispose();
+			vonoroiPoints.Dispose();
+			vonoroiPointsBuffer.Dispose();
+			return biomeTexture;
+		}
+
+		[BurstCompile]
+		struct GenerateVonoroiPointsJob : IJobParallelFor {
+			[ReadOnly]
+			public int baseSeed;
+			[ReadOnly]
+			public int height, width;
+			[ReadOnly]
+			public NativeArray<Color> baseTexture;
+			// Output
+			public NativeArray<float3> vonoroiPoints;
+			public void Execute(int index) {
+				Unity.Mathematics.Random random = new Unity.Mathematics.Random();
+				random.InitState((uint)((baseSeed + 1) * (index + 1)));
+				int x = random.NextInt(width);
+				int y = 0;
+				if (width / 4 < x && x < width / 2)
+					y = random.NextInt(height);
+				else
+					y = random.NextInt(height / 3, 2 * height / 3);
+				Color color = baseTexture[x + y * width];
+				vonoroiPoints[index] = new float3(color.r, color.g, color.b);
+			}
 		}
 
 		public static Texture2D GenerateHeightTexture(Texture2D baseTexture) {
@@ -135,6 +213,88 @@ namespace PlanetEngine {
 			heigtTexture.Apply();
 			return heigtTexture;
 		}
+
+
+		public static Texture2D GenerateHeightTextureThreaded(Texture2D baseTexture, float scaler = 2, bool binary = false) {
+			Texture2D heightTexture = new Texture2D(baseTexture.width, baseTexture.height, TextureFormat.RFloat, false);
+			heightTexture.filterMode = FilterMode.Point;
+			Perlin.Seed = Time.frameCount;
+			Perlin.Scale = 2.5f;
+			NativeArray<Color> baseTextureBuffer = baseTexture.GetRawTextureData<Color>();
+			NativeArray<float> heightTextureBuffer = new NativeArray<float>(baseTextureBuffer.Length, Allocator.TempJob);
+			GenerateHeightTextureJob heightTextureJob = new GenerateHeightTextureJob() {
+				scaler = scaler,
+				binary = binary,
+				height = baseTexture.height,
+				width = baseTexture.width,
+				baseTexture = baseTextureBuffer,
+				heightTexture = heightTextureBuffer
+			};
+			heightTextureJob.Schedule(baseTextureBuffer.Length, 1).Complete();
+			heightTexture.SetPixelData(heightTextureBuffer.ToArray(), 0);
+			heightTexture.Apply();
+			heightTextureBuffer.Dispose();
+			return heightTexture;
+		}
+
+		[BurstCompile]
+		struct GenerateHeightTextureJob : IJobParallelFor {
+
+			[ReadOnly]
+			public float scaler;
+			[ReadOnly]
+			public bool binary;
+			[ReadOnly]
+			public int height, width;
+			[ReadOnly]
+			public NativeArray<Color> baseTexture;
+			// Output
+			public NativeArray<float> heightTexture;
+			public void Execute(int index) {
+				Color color = baseTexture[index];
+				if (color.a == 0) return;
+				Vector3 vertex = new Vector3(color.r, color.g, color.b);
+				float height = noise.cnoise(vertex * scaler);
+				if (binary) {
+					height = height < 0 ? 0 : 1;
+				} else {
+					height = 0.5f * height + 0.5f;
+				}
+				heightTexture[index] = height;
+			}
+		}
+
+		public static Texture2D AdjustHeight(Vector3 center, int size, Texture2D heightTexture, Texture2D baseTexture) {
+			Debug.Log("Adjust");
+			int[] coordinate = new int[] { 0, 0 };
+			float min_dist = 100f;
+			for (int x = 0; x < baseTexture.width; x++) {
+				for (int y = 0; y < baseTexture.height; y++) {
+					Color color = baseTexture.GetPixel(x, y);
+					if (color.a == 0) continue;
+					Vector3 vertex = new Vector3(color.r, color.g, color.b);
+					if (Vector3.Distance(vertex, center) < min_dist) {
+						min_dist = Vector3.Distance(vertex, center);
+						coordinate = new int[] { x, y };
+					}
+				}
+			}
+			for (int x = coordinate[0] - size; x < coordinate[0] + size; x++) {
+				if (x < 0 || heightTexture.width <= x) continue;
+				for (int y = coordinate[1] - size; y < coordinate[1] + size; y++) {
+					if (y < 0 || heightTexture.height <= y) continue;
+					float value = Mathf.Abs(coordinate[0] - x) + Mathf.Abs(coordinate[1] - y);
+					value /= 2 * size;
+					if (x == coordinate[0] - 5 && y == coordinate[1] - 5) Debug.Log(value);
+					value = 1 - value;
+					Color color = heightTexture.GetPixel(x, y) + Color.white * value;
+					heightTexture.SetPixel(x, y, color);
+				}
+			}
+			heightTexture.Apply();
+			return heightTexture;
+		}
+
 		public static Texture2D GenerateTerrainColorTexture(Texture2D biomeTexture, Texture2D heigtMap) {
 			Texture2D terrainTexture = new Texture2D(biomeTexture.width, biomeTexture.height);
 			terrainTexture.filterMode = FilterMode.Point;
@@ -219,6 +379,48 @@ namespace PlanetEngine {
 			}
 			terrainTexture.Apply();
 			return terrainTexture;
+		}
+
+		public static Texture2D RegenerateBaseTextureForSubSurface(Texture2D baseTexture, Rect zone, RectInt size) {
+			ComputeShader textureShader = Resources.Load<ComputeShader>("ComputeShaders/TextureShader");
+			if (textureShader == null) Debug.LogWarning("No shader loaded");
+			int kernelIndex = textureShader.FindKernel("RegenerateBaseTexture");
+
+			// Output texture
+			RenderTexture renderTexture = new RenderTexture(size.width, size.height, 24);
+			renderTexture.enableRandomWrite = true;
+			renderTexture.Create();
+			textureShader.SetTexture(kernelIndex, "base_texture_out", renderTexture);
+			textureShader.SetInt("width", size.width);
+			textureShader.SetInt("height", size.height);
+
+			// Input vertices
+			Color[] vertexColors = new Color[]{
+				baseTexture.GetPixel(
+					Mathf.RoundToInt(baseTexture.width * zone.x) + 1,
+					Mathf.RoundToInt(baseTexture.height * zone.y)+ 1),
+				baseTexture.GetPixel(
+					Mathf.RoundToInt(baseTexture.width * (zone.x + zone.width))- 2,
+					Mathf.RoundToInt(baseTexture.height * zone.y)+ 1),
+				baseTexture.GetPixel(
+					Mathf.RoundToInt(baseTexture.width * zone.x)+ 1,
+					Mathf.RoundToInt(baseTexture.height * (zone.y + zone.height))- 2),
+				baseTexture.GetPixel(
+					Mathf.RoundToInt(baseTexture.width * (zone.x  + zone.width))- 2,
+					Mathf.RoundToInt(baseTexture.height * (zone.y + zone.height))-2)
+			};
+			textureShader.SetFloats("left_bottom_corner", new float[] { vertexColors[0].r, vertexColors[0].g, vertexColors[0].b, vertexColors[0].a });
+			textureShader.SetFloats("right_bottom_corner", new float[] { vertexColors[1].r, vertexColors[1].g, vertexColors[1].b, vertexColors[1].a });
+			textureShader.SetFloats("left_top_corner", new float[] { vertexColors[2].r, vertexColors[2].g, vertexColors[2].b, vertexColors[2].a });
+			textureShader.SetFloats("right_top_corner", new float[] { vertexColors[3].r, vertexColors[3].g, vertexColors[3].b, vertexColors[3].a });
+
+			textureShader.Dispatch(kernelIndex, size.width, size.height, 1);
+			Texture2D outputTexture = new Texture2D(size.width, size.height, TextureFormat.RGBAFloat, false);
+			outputTexture.filterMode = FilterMode.Point;
+			RenderTexture.active = renderTexture;
+			outputTexture.ReadPixels(new Rect(0, 0, size.width, size.height), 0, 0);
+			outputTexture.Apply();
+			return outputTexture;
 		}
 	}
 

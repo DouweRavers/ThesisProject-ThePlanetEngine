@@ -6,23 +6,29 @@ namespace PlanetEngine {
 	public struct PlanetData {
 		public Texture2D baseTexture;
 		public Texture2D heightTexture;
+		public Texture2D ContinentTexture;
 		public Texture2D biomeTexture;
 		public Texture2D terrainColorTexture;
 
 		public PlanetData(Texture2D baseTexture) {
 			this.baseTexture = baseTexture;
-			heightTexture = TextureTool.GenerateHeightTexture(baseTexture);
-			biomeTexture = TextureTool.GenerateBiomeTexture(baseTexture, heightTexture);
-			terrainColorTexture = TextureTool.GenerateTerrainColorTexture(biomeTexture, heightTexture);
+			ContinentTexture = TextureTool.GenerateHeightTextureThreaded(baseTexture, 3);
+			heightTexture = TextureTool.GenerateHeightTextureThreaded(baseTexture, 3);
+			biomeTexture = TextureTool.GenerateBiomeTextureGPU(baseTexture, 100);
+			terrainColorTexture = biomeTexture;
 		}
 	}
 
 	[ExecuteInEditMode]
 	public class Planet : MonoBehaviour {
 		public PlanetData data;
-		public int maxDepth = 3, maxLOD = 4;
+		public int maxDepth = 3;
+		public float radius = 1;
+		[HideInInspector]
+		public int maxLOD = 4;
 		public Transform target;
 		void Start() {
+			if (transform.childCount > 0) return;
 			GeneratePlanetData();
 			CreatePlanet();
 		}
@@ -45,7 +51,7 @@ namespace PlanetEngine {
 
 		void GeneratePlanetData() {
 			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			Texture2D baseTexture = TextureTool.GenerateBaseTextureGPU(100, 75); // texture should be 4 x 3
+			Texture2D baseTexture = TextureTool.GenerateBaseTextureGPU(800, 600); // texture should be 4 x 3
 			data = new PlanetData(baseTexture);
 		}
 
@@ -65,13 +71,14 @@ namespace PlanetEngine {
 				mesh = MeshGenerator.SubdivideGPU(mesh);
 				Mesh local_mesh = Instantiate(mesh);
 				local_mesh = MeshGenerator.SubdivideGPU(local_mesh);
-				local_mesh = MeshGenerator.NormalizeAndAmplify(local_mesh, 1);
-				local_mesh = MeshGenerator.ApplyHeightmap(local_mesh, data.heightTexture);
+				local_mesh = MeshGenerator.NormalizeAndAmplify(local_mesh, radius);
+				local_mesh = MeshGenerator.ApplyHeightmap(local_mesh, data.heightTexture, radius);
 				local_mesh.Optimize();
 				local_mesh.RecalculateBounds();
 				local_mesh.RecalculateNormals();
 				local_mesh.RecalculateTangents();
 				meshObject.AddComponent<MeshFilter>().mesh = local_mesh;
+				meshObject.AddComponent<SphereCollider>().radius = 1;
 
 				// Create material for current mesh
 				Material material = new Material(Shader.Find("Standard"));
@@ -87,9 +94,9 @@ namespace PlanetEngine {
 			GameObject QuadRootObject = new GameObject();
 			QuadRootObject.name = gameObject.name + " - QuadRoot";
 			QuadRootObject.tag = "PlanetEngine";
-			QuadTreeRoot quadTreeRoot = QuadRootObject.AddComponent<QuadTreeRoot>();
-			quadTreeRoot.CreateQuadTree(this);
 			QuadRootObject.transform.SetParent(transform);
+			QuadTreeRoot quadTreeRoot = QuadRootObject.AddComponent<QuadTreeRoot>();
+			quadTreeRoot.CreateQuadTree();
 			return QuadRootObject;
 		}
 	}

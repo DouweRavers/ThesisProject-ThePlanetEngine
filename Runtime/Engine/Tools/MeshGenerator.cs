@@ -1,9 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Jobs;
-using Unity.Burst;
-using Unity.Mathematics;
-using Unity.Collections;
 
 namespace PlanetEngine {
 
@@ -14,6 +10,7 @@ namespace PlanetEngine {
 		  #           Primitive Meshes              #
 		  ###########################################*/
 
+		// TODO: Just turn these functions in obj files. 
 		public static Mesh GenerateUnitQuadMesh() { // basis for a plane
 
 			List<Vector3> newVertices = new List<Vector3>() {
@@ -379,7 +376,6 @@ namespace PlanetEngine {
 			// Pass batch size
 			int threads = Mathf.RoundToInt(vertices.Length);
 			meshShader.SetInt("maximum", threads);
-			Debug.Log("Max: " + threads);
 			if (60000 < threads) {
 				int factor = Mathf.CeilToInt(threads / 60000f);
 				meshShader.SetInt("batch", factor);
@@ -431,7 +427,7 @@ namespace PlanetEngine {
 			return mesh;
 		}
 
-		public static Mesh[] SplitPlaneMeshInFour(Mesh mesh) {
+		public static Mesh[] SplitPlaneMeshInFour(Mesh mesh, bool resetUV = true) {
 			int[] indices = mesh.triangles;
 			Vector3[] vertices = mesh.vertices;
 			Vector2[] uvs = mesh.uv;
@@ -467,16 +463,24 @@ namespace PlanetEngine {
 				verticesArrays[alpha].Add(vertices[indices[i + 2]]);
 				uvsArrays[alpha].Add(uvs[indices[i + 2]]);
 			}
+
 			for (int i = 0; i < 4; i++) {
+				if (resetUV) {
+					Vector2 start = uvsArrays[i][0];
+					for (int j = 0; j < uvsArrays[i].Count; j++) {
+						uvsArrays[i][j] = 2 * (uvsArrays[i][j] - start);
+					}
+				}
 				meshes[i].indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 				meshes[i].vertices = verticesArrays[i].ToArray();
 				meshes[i].triangles = indicesArrays[i].ToArray();
 				meshes[i].uv = uvsArrays[i].ToArray();
 			}
+
 			return meshes;
 		}
 
-		public static Mesh ApplyHeightmap(Mesh mesh, Texture2D heigtmap) {
+		public static Mesh ApplyHeightmap(Mesh mesh, Texture2D heigtmap, float radius) {
 			Vector3[] vertices = mesh.vertices;
 			Vector2[] uvs = mesh.uv;
 
@@ -496,9 +500,10 @@ namespace PlanetEngine {
 			ComputeBuffer newVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
 			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
 			// Pass offset to shader
-			meshShader.SetTexture(kernelIndex, "heigtmap", heigtmap);
-			meshShader.SetInt("map_width", heigtmap.width);
-			meshShader.SetInt("map_height", heigtmap.height);
+			meshShader.SetTexture(kernelIndex, "heightmap", heigtmap);
+			meshShader.SetInt("width", heigtmap.width);
+			meshShader.SetInt("height", heigtmap.height);
+			meshShader.SetFloat("radius", radius);
 			// Pass batch size to shader
 			int threads = Mathf.RoundToInt(vertices.Length);
 			meshShader.SetInt("maximum", threads);
