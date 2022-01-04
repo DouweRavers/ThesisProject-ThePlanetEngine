@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PlanetEngine {
 
 	//internal
-	public static class MeshGenerator {
+	public static class MeshTool {
 
 		/*###########################################
 		  #           Primitive Meshes              #

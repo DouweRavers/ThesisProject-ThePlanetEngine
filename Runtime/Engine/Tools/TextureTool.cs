@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 
 namespace PlanetEngine {
-	/*internal*/
+
 	public static class TextureTool {
 
 		// Generates a base texture on which all textures base. This method will take a mesh with UV coordinates and generate a

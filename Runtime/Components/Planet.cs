@@ -1,103 +1,123 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 
 namespace PlanetEngine {
 	public struct PlanetData {
-		public Texture2D baseTexture;
-		public Texture2D heightTexture;
-		public Texture2D ContinentTexture;
-		public Texture2D biomeTexture;
-		public Texture2D terrainColorTexture;
+		#region Data Textures
+		// Expl
+		public Texture2D BaseTexture {
+			get { return _baseTexture; }
+			set {
+				_baseTexture = value;
+				_heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
+				_biomeTexture = TextureTool.GenerateBiomeTextureGPU(_baseTexture, 100);
+			}
+		}
+		Texture2D _baseTexture;
 
-		public PlanetData(Texture2D baseTexture) {
-			this.baseTexture = baseTexture;
-			ContinentTexture = TextureTool.GenerateHeightTextureThreaded(baseTexture, 3);
-			heightTexture = TextureTool.GenerateHeightTextureThreaded(baseTexture, 3);
-			biomeTexture = TextureTool.GenerateBiomeTextureGPU(baseTexture, 100);
-			terrainColorTexture = biomeTexture;
+		public Texture2D HeightTexture { get { return _heightTexture; } }
+		Texture2D _heightTexture;
+
+		public Texture2D BiomeTexture { get { return _biomeTexture; } }
+		Texture2D _biomeTexture;
+		#endregion
+
+		#region Celestial Properties
+		public float Radius;
+		#endregion
+
+		#region Planet settings
+		public int MaxDepth;
+		public int LODSphereCount;
+		#endregion
+		public PlanetData(RectInt textureSize, float radius = 1f, int maxDepth = 3, int lodSphereCount = 2) {
+			_baseTexture = TextureTool.GenerateBaseTextureGPU(textureSize.width, textureSize.height);
+			_heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
+			_biomeTexture = TextureTool.GenerateBiomeTextureGPU(_baseTexture, 100);
+			Radius = radius;
+			MaxDepth = maxDepth;
+			LODSphereCount = lodSphereCount;
 		}
 	}
 
 	[ExecuteInEditMode]
 	public class Planet : MonoBehaviour {
-		public PlanetData data;
-		public int maxDepth = 3;
-		public float radius = 1;
+
+		#region Unity Interface
+		public int MaxDepth { get { return _data.MaxDepth; } set { _data.MaxDepth = value; } }
+		public float Radius { get { return _data.Radius; } set { _data.Radius = value; } }
+		public int LODSphereCount { get { return _data.LODSphereCount; } set { _data.LODSphereCount = value; } }
+		#endregion
+
+		#region Planet Engine Interface parameters
 		[HideInInspector]
-		public int maxLOD = 4;
-		public Transform target;
-		void Start() {
-			if (transform.childCount > 0) return;
-			GeneratePlanetData();
-			CreatePlanet();
+		public PlanetData Data { get { return _data; } set { _data = value; } }
+		PlanetData _data;
+		#endregion
+
+		#region Planet Engine Interface methods
+		public void CreateNewPlanet() {
+			CreateNewPlanetData();
+			CreatePlanetFromData();
+		}
+		#endregion
+
+		#region Data processing methods
+		void CreateNewPlanetData() {
+			Data = new PlanetData(new RectInt(0, 0, 1200, 900));
 		}
 
-		public void CreatePlanet() {
-			GameObject[] LODSpheres = CreateLODSphereMeshes(maxLOD);
-			GameObject QuadTree = CreateQuadTree();
-			// Create A LOD group that manages the spherical and Quad tree mesh
-			LOD[] lodArray = new LOD[LODSpheres.Length + 1];
-			for (int i = 0; i < lodArray.Length; i++) {
-				lodArray[i].screenRelativeTransitionHeight = 0.8f * Mathf.Pow(1 - ((float)i / LODSpheres.Length), 3);
-				if (i == 0) lodArray[0].renderers = (Renderer[])QuadTree.GetComponentsInChildren<MeshRenderer>();
-				else lodArray[i].renderers = new Renderer[] { (Renderer)LODSpheres[i - 1].GetComponent<MeshRenderer>() };
+		void LoadPlanetData() {
+			throw new NotImplementedException();
+		}
+
+		void SavePlanetData() {
+			throw new NotImplementedException();
+		}
+		#endregion
+
+		#region Planet Generation methods
+		void CreatePlanetFromData() {
+			List<Transform> LevelsOfDetail = new List<Transform>();
+			CreateSingleMeshObjects(LevelsOfDetail);
+			CreateQuadTreeObject(LevelsOfDetail);
+			LevelsOfDetail.Reverse();
+			ConfigureLOD(LevelsOfDetail);
+		}
+
+		void CreateSingleMeshObjects(List<Transform> LODlist) {
+			Mesh mesh = MeshTool.GenerateUnitCubeMesh();
+			for (int i = 0; i < _data.LODSphereCount; i++) {
+				GameObject singleMeshObject = new GameObject(gameObject.name + " - LODSphere: " + i);
+				singleMeshObject.tag = "PlanetEngine";
+				singleMeshObject.transform.SetParent(transform);
+				SingleMeshLODInstance singleMeshLODInstance = singleMeshObject.AddComponent<SingleMeshLODInstance>();
+				singleMeshLODInstance.ApplyMesh(mesh, ref _data);
+				singleMeshLODInstance.ApplyTexture(_data.BaseTexture);
+				LODlist.Add(singleMeshObject.transform);
 			}
-			LODGroup lodComponent = gameObject.GetComponent<LODGroup>();
-			if (lodComponent == null) lodComponent = gameObject.AddComponent<LODGroup>();
+		}
+
+		void CreateQuadTreeObject(List<Transform> LODlist) {
+			GameObject quadRootObject = new GameObject(gameObject.name + " - QuadRoot");
+			quadRootObject.tag = "PlanetEngine";
+			quadRootObject.transform.SetParent(transform);
+			quadRootObject.AddComponent<QuadTreeRoot>().CreateQuadTree();
+			LODlist.Add(quadRootObject.transform);
+		}
+
+		void ConfigureLOD(List<Transform> LODlist) {
+			LOD[] lodArray = new LOD[LODlist.Count];
+			for (int i = 0; i < LODlist.Count; i++) {
+				lodArray[i].screenRelativeTransitionHeight = 0.8f * Mathf.Pow(1 - ((float)i / LODlist.Count), 3);
+				lodArray[i].renderers = (Renderer[])LODlist[i].GetComponentsInChildren<MeshRenderer>();
+			}
+			LODGroup lodComponent = gameObject.AddComponent<LODGroup>();
 			lodComponent.SetLODs(lodArray);
 			lodComponent.RecalculateBounds();
 		}
-
-		void GeneratePlanetData() {
-			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-			Texture2D baseTexture = TextureTool.GenerateBaseTextureGPU(800, 600); // texture should be 4 x 3
-			data = new PlanetData(baseTexture);
-		}
-
-		GameObject[] CreateLODSphereMeshes(int count) {
-			Mesh mesh = MeshGenerator.GenerateUnitCubeMesh();
-
-			GameObject[] LODSpheres = new GameObject[count];
-			for (int i = 0; i < count; i++) {
-				// Create object holding the mesh
-				GameObject meshObject = new GameObject();
-				meshObject.name = gameObject.name + " - LODSphere: " + i;
-				meshObject.tag = "PlanetEngine";
-				meshObject.transform.SetParent(transform);
-				LODSpheres[i] = meshObject;
-
-				// Create sphere mesh with certain complexity (subdivisions) 
-				mesh = MeshGenerator.SubdivideGPU(mesh);
-				Mesh local_mesh = Instantiate(mesh);
-				local_mesh = MeshGenerator.SubdivideGPU(local_mesh);
-				local_mesh = MeshGenerator.NormalizeAndAmplify(local_mesh, radius);
-				local_mesh = MeshGenerator.ApplyHeightmap(local_mesh, data.heightTexture, radius);
-				local_mesh.Optimize();
-				local_mesh.RecalculateBounds();
-				local_mesh.RecalculateNormals();
-				local_mesh.RecalculateTangents();
-				meshObject.AddComponent<MeshFilter>().mesh = local_mesh;
-				meshObject.AddComponent<SphereCollider>().radius = 1;
-
-				// Create material for current mesh
-				Material material = new Material(Shader.Find("Standard"));
-				material.mainTexture = data.terrainColorTexture;
-				meshObject.AddComponent<MeshRenderer>().sharedMaterial = material;
-			}
-			// resort from big to small
-			Array.Reverse(LODSpheres);
-			return LODSpheres;
-		}
-
-		GameObject CreateQuadTree() {
-			GameObject QuadRootObject = new GameObject();
-			QuadRootObject.name = gameObject.name + " - QuadRoot";
-			QuadRootObject.tag = "PlanetEngine";
-			QuadRootObject.transform.SetParent(transform);
-			QuadTreeRoot quadTreeRoot = QuadRootObject.AddComponent<QuadTreeRoot>();
-			quadTreeRoot.CreateQuadTree();
-			return QuadRootObject;
-		}
+		#endregion
 	}
 }
