@@ -12,29 +12,24 @@ using UnityEngine;
  *      
  * 
  **********************************************************************/
-namespace PlanetEngine
-{
+namespace PlanetEngine {
 
 	[Serializable]
-	public static class PlanetEngineEditor
-	{
-		public static void CreatePlanet(string planetName)
-		{
+	public static class PlanetEngineEditor {
+		public static void CreatePlanet(string planetName) {
 			EditorConfigurator.CreateTag("PlanetEngine");
 			GameObject planet = PlanetEngine.CreatePlanet(planetName);
 			Selection.activeTransform = planet.transform;
 		}
 
-		public static bool isSelectedObjectPlanet()
-		{
+		public static bool isSelectedObjectPlanet() {
 			if (Selection.activeGameObject != null)
 				return Selection.activeTransform.gameObject.GetComponent<Planet>() != null;
 			else
 				return false;
 		}
 
-		public static GameObject getSelectedPlanet()
-		{
+		public static GameObject getSelectedPlanet() {
 			if (isSelectedObjectPlanet())
 				return Selection.activeTransform.gameObject;
 			else

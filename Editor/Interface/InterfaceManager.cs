@@ -10,30 +10,14 @@ using UnityEngine;
  **********************************************************************/
 namespace PlanetEngine {
 
-	public class InterfaceManager : ScriptableObject {
+	public static class InterfaceManager {
 
-		#region Singleton
-		// This class only exist once in the editor.
-		private static InterfaceManager instance = null;
-		private static readonly object padlock = new object();
-		public static InterfaceManager singleton {
-			get {
-				lock (padlock) {
-					if (instance == null) {
-						instance = CreateInstance<InterfaceManager>();
-					}
-					return instance;
-				}
-			}
-		}
-		#endregion
-
-		#region Loaded textures
+		#region Resource access
 		// Textures get loaded once here so no unnesseary duplicates are created.
 		public static Texture2D PlanetEnginelogo {
 			get {
 				if (PElogo == null) {
-					PElogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Editor/Images/WhiteLogo.png", typeof(Texture2D));
+					PElogo = (Texture2D)Resources.Load<Texture2D>("WhiteLogo");
 				}
 				return PElogo;
 			}
@@ -41,7 +25,7 @@ namespace PlanetEngine {
 		public static Texture2D Douwcologo {
 			get {
 				if (Dlogo == null) {
-					Dlogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Editor/Images/DouwcoLogo.png", typeof(Texture2D));
+					Dlogo = (Texture2D)Resources.Load<Texture2D>("DouwcoLogo");
 				}
 				return Dlogo;
 			}
@@ -56,7 +40,7 @@ namespace PlanetEngine {
 			PlanetEngineEditor.CreatePlanet("Planet");
 		}
 
-		[MenuItem("Window/Planet Engine/Universe Manager")]
+		[MenuItem("Window/Planet Engine")]
 		public static void ShowWindow() {
 			PlanetManagerWindow wnd = EditorWindow.GetWindow<PlanetManagerWindow>();
 			wnd.titleContent = new GUIContent("Planet manager");

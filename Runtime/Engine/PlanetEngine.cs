@@ -13,12 +13,11 @@ using UnityEngine;
 namespace PlanetEngine {
 
 	public static class PlanetEngine {
-		public static readonly string rootPath = "Assets/ThesisProject-ThePlanetEngine/"; // "Packages/com.douwco.theplanetengine/"
 		public static GameObject CreatePlanet(string planetName) {
 			GameObject planet = new GameObject();
 			planet.name = planetName;
 			planet.tag = "PlanetEngine";
-			planet.AddComponent<Planet>();
+			planet.AddComponent<Planet>().CreateNewPlanet();
 			return planet;
 		}
 	}

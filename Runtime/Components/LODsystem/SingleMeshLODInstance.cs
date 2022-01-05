@@ -1,0 +1,30 @@
+using UnityEngine;
+using System;
+using System.Collections.Generic;
+
+
+namespace PlanetEngine {
+
+	[RequireComponent(typeof(MeshRenderer))]
+	[RequireComponent(typeof(MeshFilter))]
+	public class SingleMeshLODInstance : MonoBehaviour {
+		public void ApplyMesh(Mesh mesh, ref PlanetData data) {
+			mesh = MeshTool.SubdivideGPU(mesh);
+			Mesh local_mesh = Instantiate(mesh);
+			local_mesh = MeshTool.SubdivideGPU(local_mesh);
+			local_mesh = MeshTool.NormalizeAndAmplify(local_mesh, data.Radius);
+			local_mesh = MeshTool.ApplyHeightmap(local_mesh, data.HeightTexture, data.Radius);
+			local_mesh.Optimize();
+			local_mesh.RecalculateBounds();
+			local_mesh.RecalculateNormals();
+			local_mesh.RecalculateTangents();
+			GetComponent<MeshFilter>().mesh = local_mesh;
+		}
+
+		public void ApplyTexture(Texture2D texture) {
+			Material material = new Material(Shader.Find("Standard"));
+			material.mainTexture = texture;
+			GetComponent<MeshRenderer>().sharedMaterial = material;
+		}
+	}
+}
