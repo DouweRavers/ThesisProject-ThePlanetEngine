@@ -114,5 +114,7 @@ void RegenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 	float4 bottom_vec = lerp(left_bottom_corner, right_bottom_corner, x_value);
 	float4 top_vec = lerp(left_top_corner, right_top_corner, x_value);
 	float4 value = lerp(bottom_vec, top_vec, y_value);
+	value.xyz = normalize(value.xyz - 0.5);
+	value.xyz = (value.xyz + 1) / 2;
 	base_texture_out[id.xy] = value;
 }

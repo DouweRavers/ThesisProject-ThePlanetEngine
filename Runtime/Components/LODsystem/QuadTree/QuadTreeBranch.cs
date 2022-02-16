@@ -11,12 +11,15 @@ namespace PlanetEngine {
 			set {
 				this._baseTexture = value;
 				this._heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
+				this._colorTexture = _baseTexture;
 			}
 		}
 		Texture2D _baseTexture;
 
 		public Texture2D HeightTexture { get { return _heightTexture; } }
 		Texture2D _heightTexture;
+		public Texture2D ColorTexture { get { return _colorTexture; } }
+		Texture2D _colorTexture;
 		#endregion
 
 		#region Branch Properties
@@ -31,6 +34,7 @@ namespace PlanetEngine {
 			// Generate textures
 			_baseTexture = TextureTool.RegenerateBaseTextureForSubSurface(planetData.BaseTexture, zone, new RectInt(0, 0, 512, 512));
 			_heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
+			_colorTexture = _baseTexture;
 			// Generate mesh
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
 			planeMesh = MeshTool.OffsetMesh(planeMesh, Vector3.up * 0.5f);
@@ -43,6 +47,7 @@ namespace PlanetEngine {
 			// Generate textures
 			_baseTexture = TextureTool.RegenerateBaseTextureForSubSurface(parentData.BaseTexture, zone, new RectInt(0, 0, 512, 512));
 			_heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
+			_colorTexture = _baseTexture;
 			// Generate mesh
 			Bounds parentMeshBounds = parentData.planeMesh.bounds;
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
@@ -112,7 +117,7 @@ namespace PlanetEngine {
 
 		public void CreateBranch() {
 			ApplyMesh(_data.planeMesh);
-			ApplyTexture(_data.BaseTexture);
+			ApplyTexture(_data.HeightTexture);
 		}
 
 		void ApplyMesh(Mesh planeMesh) {
@@ -120,8 +125,8 @@ namespace PlanetEngine {
 			Mesh curvedMesh = Instantiate(planeMesh);
 			curvedMesh = MeshTool.NormalizeAndAmplify(curvedMesh, planetData.Radius);
 			curvedMesh = MeshTool.SubdivideGPU(curvedMesh);
-			curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, _data.HeightTexture, planetData.Radius);
-			curvedMesh.RecalculateBounds();
+            curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, _data.HeightTexture, planetData.Radius);
+            curvedMesh.RecalculateBounds();
 			Vector3 localMeshCenter = curvedMesh.bounds.center;
 			curvedMesh = MeshTool.OffsetMesh(curvedMesh, -localMeshCenter);
 			transform.position = transform.TransformPoint(localMeshCenter) - transform.parent.position;
@@ -134,8 +139,8 @@ namespace PlanetEngine {
 
 		void ApplyTexture(Texture2D texture) {
 			Material material = new Material(Shader.Find("Standard"));
-			material.mainTexture = texture;
-			GetComponent<MeshRenderer>().material = material;
+            material.mainTexture = texture;
+            GetComponent<MeshRenderer>().material = material;
 		}
 
 		void CreateChildQuads() {
