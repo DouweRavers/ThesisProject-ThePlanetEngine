@@ -501,8 +501,8 @@ namespace PlanetEngine {
 			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
 			// Pass offset to shader
 			meshShader.SetTexture(kernelIndex, "heightmap", heigtmap);
-			meshShader.SetInt("width", heigtmap.width);
-			meshShader.SetInt("height", heigtmap.height);
+			meshShader.SetInt("width", heigtmap.width - 1);
+			meshShader.SetInt("height", heigtmap.height - 1);
 			meshShader.SetFloat("radius", radius);
 			// Pass batch size to shader
 			int threads = Mathf.RoundToInt(vertices.Length);
@@ -524,8 +524,6 @@ namespace PlanetEngine {
 			return mesh;
 		}
 	}
-
-
 
 }
 

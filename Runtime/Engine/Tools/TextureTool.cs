@@ -3,6 +3,7 @@ using Unity.Jobs;
 using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Collections;
+using System;
 
 namespace PlanetEngine {
 
@@ -11,6 +12,7 @@ namespace PlanetEngine {
 		// Generates a base texture on which all textures base. This method will take a mesh with UV coordinates and generate a
 		// Texture that maps all (normalized) vector values as RGB values by interpolating between two given vertices.
 		// The A value is the magnitude of the vector
+		[Obsolete("A more performand GPU based method is available. Maybe for mobile applications this is a option.", false)]
 		public static Texture2D GenerateBaseTextureCPU(Mesh mesh, Rect size) {
 			Texture2D baseTexture = new Texture2D(Mathf.RoundToInt(size.width), Mathf.RoundToInt(size.height), TextureFormat.RGBAFloat, false);
 			baseTexture.filterMode = FilterMode.Point;
@@ -56,12 +58,12 @@ namespace PlanetEngine {
 			if (textureShader == null) Debug.LogWarning("No shader loaded");
 			int kernelIndex = textureShader.FindKernel("GenerateBaseTexture");
 
-			RenderTexture baseTexture = new RenderTexture(width, height, 24);
+			RenderTexture baseTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
 			baseTexture.enableRandomWrite = true;
 			baseTexture.Create();
 			textureShader.SetTexture(kernelIndex, "base_texture_out", baseTexture);
-			textureShader.SetInt("width", width);
-			textureShader.SetInt("height", height);
+			textureShader.SetInt("width", width - 1);
+			textureShader.SetInt("height", height - 1);
 			textureShader.Dispatch(kernelIndex, width, height, 1);
 			Texture2D outputTexture = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
 			outputTexture.filterMode = FilterMode.Point;
@@ -71,6 +73,7 @@ namespace PlanetEngine {
 			return outputTexture;
 		}
 
+		[Obsolete("A more performand GPU based method is available. Maybe for mobile applications this is a option.", false)]
 		public static Texture2D GenerateBiomeTextureCPU(Texture2D baseTexture, Texture2D heigtMap) {
 			System.Random random = new System.Random();
 			Vector3[] points = new Vector3[baseTexture.width];
@@ -148,8 +151,8 @@ namespace PlanetEngine {
 			textureShader.SetTexture(kernelIndex, "biome_texture_out", biomeRenderTexture);
 			// input base texture for vertex data
 			textureShader.SetTexture(kernelIndex, "base_texture", baseTexture);
-			textureShader.SetInt("width", baseTexture.width);
-			textureShader.SetInt("height", baseTexture.height);
+			textureShader.SetInt("width", baseTexture.width - 1);
+			textureShader.SetInt("height", baseTexture.height - 1);
 			// input vonoroi points 
 			ComputeBuffer vonoroiPointsBuffer = new ComputeBuffer(vonoroiPoints.Length, 3 * sizeof(float));
 			vonoroiPointsBuffer.SetData(vonoroiPoints);
@@ -195,6 +198,7 @@ namespace PlanetEngine {
 			}
 		}
 
+		[Obsolete("A more performand multi-threaded based method is available.", false)]
 		public static Texture2D GenerateHeightTexture(Texture2D baseTexture) {
 			Texture2D heigtTexture = new Texture2D(baseTexture.width, baseTexture.height);
 			heigtTexture.filterMode = FilterMode.Point;
@@ -213,7 +217,6 @@ namespace PlanetEngine {
 			heigtTexture.Apply();
 			return heigtTexture;
 		}
-
 
 		public static Texture2D GenerateHeightTextureThreaded(Texture2D baseTexture, float scaler = 2, bool binary = false) {
 			Texture2D heightTexture = new Texture2D(baseTexture.width, baseTexture.height, TextureFormat.RFloat, false);
@@ -262,37 +265,6 @@ namespace PlanetEngine {
 				}
 				heightTexture[index] = height;
 			}
-		}
-
-		public static Texture2D AdjustHeight(Vector3 center, int size, Texture2D heightTexture, Texture2D baseTexture) {
-			Debug.Log("Adjust");
-			int[] coordinate = new int[] { 0, 0 };
-			float min_dist = 100f;
-			for (int x = 0; x < baseTexture.width; x++) {
-				for (int y = 0; y < baseTexture.height; y++) {
-					Color color = baseTexture.GetPixel(x, y);
-					if (color.a == 0) continue;
-					Vector3 vertex = new Vector3(color.r, color.g, color.b);
-					if (Vector3.Distance(vertex, center) < min_dist) {
-						min_dist = Vector3.Distance(vertex, center);
-						coordinate = new int[] { x, y };
-					}
-				}
-			}
-			for (int x = coordinate[0] - size; x < coordinate[0] + size; x++) {
-				if (x < 0 || heightTexture.width <= x) continue;
-				for (int y = coordinate[1] - size; y < coordinate[1] + size; y++) {
-					if (y < 0 || heightTexture.height <= y) continue;
-					float value = Mathf.Abs(coordinate[0] - x) + Mathf.Abs(coordinate[1] - y);
-					value /= 2 * size;
-					if (x == coordinate[0] - 5 && y == coordinate[1] - 5) Debug.Log(value);
-					value = 1 - value;
-					Color color = heightTexture.GetPixel(x, y) + Color.white * value;
-					heightTexture.SetPixel(x, y, color);
-				}
-			}
-			heightTexture.Apply();
-			return heightTexture;
 		}
 
 		public static Texture2D GenerateTerrainColorTexture(Texture2D biomeTexture, Texture2D heigtMap) {
@@ -387,18 +359,18 @@ namespace PlanetEngine {
 			int kernelIndex = textureShader.FindKernel("RegenerateBaseTexture");
 
 			// Output texture
-			RenderTexture renderTexture = new RenderTexture(size.width, size.height, 24);
+			RenderTexture renderTexture = new RenderTexture(size.width, size.height, 0, RenderTextureFormat.ARGBFloat);
 			renderTexture.enableRandomWrite = true;
 			renderTexture.Create();
 			textureShader.SetTexture(kernelIndex, "base_texture_out", renderTexture);
-			textureShader.SetInt("width", size.width);
-			textureShader.SetInt("height", size.height);
+			textureShader.SetInt("width", size.width - 1);
+			textureShader.SetInt("height", size.height - 1);
 
 			// Input vertices
 			Color[] vertexColors = new Color[]{
 				baseTexture.GetPixel(
-					Mathf.RoundToInt(baseTexture.width * zone.x) + 1,
-					Mathf.RoundToInt(baseTexture.height * zone.y)+ 1),
+					Mathf.RoundToInt(baseTexture.width * zone.x),
+					Mathf.RoundToInt(baseTexture.height * zone.y)),
 				baseTexture.GetPixel(
 					Mathf.RoundToInt(baseTexture.width * (zone.x + zone.width))- 2,
 					Mathf.RoundToInt(baseTexture.height * zone.y)+ 1),

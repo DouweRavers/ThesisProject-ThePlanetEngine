@@ -133,13 +133,10 @@ void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
 	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
 	{
 		float2 uv = old_uv_array[i];
-		int x = 0, y = 0;
-		if(uv.x < 0.3) x = ceil(width * uv.x) + 1;
-		else x = floor(width * uv.x) - 1;
-		if(uv.y < 0.5) y = ceil(height * uv.y) + 1;
-		else y = ceil(height * uv.y) - 1;
+		int x = width * uv.x;
+		int y = height * uv.y;
 		int2 coordinates = int2(x, y);
-		float height = heightmap[coordinates].r;
-		new_vertice_array[i] = normalize(old_vertice_array[i]) * radius * (1 + height * 0.1);
+		float calculated_height = heightmap[coordinates].r;
+		new_vertice_array[i] = normalize(old_vertice_array[i]) * radius * (0.75 + calculated_height * 0.5);
 	}
 }
