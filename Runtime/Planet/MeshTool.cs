@@ -480,10 +480,9 @@ namespace PlanetEngine {
 			return meshes;
 		}
 
-		public static Mesh ApplyHeightmap(Mesh mesh, Texture2D heigtmap, float radius) {
+		public static Mesh ApplyHeightmap(Mesh mesh, float radius, Matrix4x4 localToWorld) {
 			Vector3[] vertices = mesh.vertices;
-			Vector2[] uvs = mesh.uv;
-
+			
 			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
 			if (meshShader == null) Debug.LogWarning("No shader loaded");
 
@@ -492,18 +491,13 @@ namespace PlanetEngine {
 			ComputeBuffer oldVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
 			oldVertexBuffer.SetData(vertices);
 			meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
-			ComputeBuffer oldUVBuffer = new ComputeBuffer(uvs.Length, sizeof(float) * 2);
-			oldUVBuffer.SetData(uvs);
-			meshShader.SetBuffer(kernelIndex, "old_uv_array", oldUVBuffer);
-
-
 			ComputeBuffer newVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
 			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
-			// Pass offset to shader
-			meshShader.SetTexture(kernelIndex, "heightmap", heigtmap);
-			meshShader.SetInt("width", heigtmap.width - 1);
-			meshShader.SetInt("height", heigtmap.height - 1);
+
+			// Pass context data to shader
 			meshShader.SetFloat("radius", radius);
+			meshShader.SetMatrix("object_to_world", localToWorld);
+
 			// Pass batch size to shader
 			int threads = Mathf.RoundToInt(vertices.Length);
 			meshShader.SetInt("maximum", threads);
@@ -515,10 +509,10 @@ namespace PlanetEngine {
 				meshShader.SetInt("batch", 1);
 			}
 			meshShader.Dispatch(kernelIndex, threads, 1, 1);
-
+			
+			// Receive data and dispose buffers
 			newVertexBuffer.GetData(vertices);
 			oldVertexBuffer.Dispose();
-			oldUVBuffer.Dispose();
 			newVertexBuffer.Dispose();
 			mesh.vertices = vertices;
 			return mesh;

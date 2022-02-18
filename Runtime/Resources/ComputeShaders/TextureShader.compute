@@ -1,7 +1,10 @@
+#include "./HeightmapShader.hlsl"
+
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateBaseTexture
-#pragma kernel GenerateBiomeTexture
 #pragma kernel RegenerateBaseTexture
+#pragma kernel GenerateHeightmapTexture
+#pragma kernel GenerateColorTexture
 
 
 // Texture data
@@ -10,13 +13,12 @@ uint width;
 
 // Input
 Texture2D<float4> base_texture;
-Texture2D<float4> biome_texture;
 Texture2D<float> height_texture;
 
 // Output
 RWTexture2D<float4> base_texture_out;
-RWTexture2D<float4> biome_texture_out;
 RWTexture2D<float> height_texture_out;
+RWTexture2D<float4> color_texture_out;
 
 [numthreads(1,1,1)]
 void GenerateBaseTexture(uint3 id : SV_DispatchThreadID)
@@ -58,7 +60,9 @@ void GenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 	if(x >= width/4 && x < width/2 && y >= height/3 && y < 2*height/3){
 		value.z = 1;
 	}
-
+	if (x > 3 * width / 4 && y >= height/3 && y <= 2 * height / 3) {
+		value.z = 0;
+	}
 	// Depending on the x and y value set visibility
 	if (width / 4 < x && x < width / 2) value.a = 1;
 	else if(height / 3 < y && y < 2* height / 3) value.a = 1;
@@ -67,44 +71,10 @@ void GenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 	base_texture_out[id.xy] = value;
 }
 
-StructuredBuffer<float3> vonoroi_points;
-int vonoroi_point_count;
-
-[numthreads(1,1,1)]
-void GenerateBiomeTexture(uint3 id : SV_DispatchThreadID)
-{
-	float4 value = 0.0;
-	float3 pixel_vertex = base_texture[id.xy].xyz;
-	if(base_texture[id.xy].a != 0){
-		float minimum_dist1 = 100.0;
-		float minimum_dist2 = 100.0;
-		uint size = (uint) vonoroi_point_count;
-		float closest1 = 0.0, closest2 = 0.0;
-		for(uint i = 0; i < size; i++){
-			float3 point_vertex = vonoroi_points[i];
-			float3 diff = abs(pixel_vertex - point_vertex);
-			float dist = diff.x + diff.y + diff.z;
-			if(dist < minimum_dist1){
-				minimum_dist2 = minimum_dist1;
-				closest2 = closest1;
-				minimum_dist1 = dist;
-				closest1 = ((float)i)/size;
-			} else if(dist < minimum_dist1){
-				minimum_dist2 = minimum_dist1;
-				closest2 = ((float)i)/size;
-			}
-		}
-		value = float4(closest1, closest2, (minimum_dist2 - minimum_dist1) / minimum_dist2, 1);
-	}
-	biome_texture_out[id.xy] = value;
-}
-
-
 float4 left_bottom_corner;
 float4 right_bottom_corner;
 float4 left_top_corner;
 float4 right_top_corner;
-
 
 [numthreads(1,1,1)]
 void RegenerateBaseTexture(uint3 id : SV_DispatchThreadID)
@@ -117,4 +87,19 @@ void RegenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 	value.xyz = normalize(value.xyz - 0.5);
 	value.xyz = (value.xyz + 1) / 2;
 	base_texture_out[id.xy] = value;
+}
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapTexture(uint3 id : SV_DispatchThreadID)
+{
+	height_texture_out[id.xy] = CalculateHeightValue(2*base_texture[id.xy].xyz-1, 10);
+}
+
+float4 ColorA;
+float4 ColorB;
+
+[numthreads(1, 1, 1)]
+void GenerateColorTexture(uint3 id : SV_DispatchThreadID)
+{
+	color_texture_out[id.xy] = lerp(ColorA, ColorB, height_texture[id.xy]);
 }

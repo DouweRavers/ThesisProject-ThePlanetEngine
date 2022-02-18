@@ -1,7 +1,4 @@
 using UnityEngine;
-using System;
-using System.Collections.Generic;
-
 
 namespace PlanetEngine {
 
@@ -14,7 +11,7 @@ namespace PlanetEngine {
 			Mesh local_mesh = Instantiate(mesh);
 			local_mesh = MeshTool.SubdivideGPU(local_mesh);
 			local_mesh = MeshTool.NormalizeAndAmplify(local_mesh, data.Radius);
-            local_mesh = MeshTool.ApplyHeightmap(local_mesh, data.HeightTexture, data.Radius);
+            local_mesh = MeshTool.ApplyHeightmap(local_mesh, data.Radius, transform.localToWorldMatrix);
             local_mesh.RecalculateBounds();
 			local_mesh.RecalculateNormals();
 			local_mesh.RecalculateTangents();

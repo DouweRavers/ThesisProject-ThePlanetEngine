@@ -1,3 +1,5 @@
+#include "./HeightmapShader.hlsl"
+
 #pragma enable_d3d11_debug_symbols
 #pragma kernel NormalizeAndAmplify
 #pragma kernel Offset
@@ -120,23 +122,19 @@ void SubdivideMesh(uint3 id : SV_DispatchThreadID)
 	}
 }
 
+float radius; 
+float4x4 object_to_world;
 
-Texture2D<float4> heightmap;
-int width;
-int height;
-float radius;
 
 [numthreads(1,1,1)]
 void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
 {
 	int index = (int) id.x;
+	int scale = round(radius * 3);
 	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
 	{
-		float2 uv = old_uv_array[i];
-		int x = width * uv.x;
-		int y = height * uv.y;
-		int2 coordinates = int2(x, y);
-		float calculated_height = heightmap[coordinates].r;
-		new_vertice_array[i] = normalize(old_vertice_array[i]) * radius * (0.75 + calculated_height * 0.5);
+		float4 world_vertex = mul(object_to_world, float4(old_vertice_array[i], 0));
+		float calculated_height = CalculateHeightValue(world_vertex.xyz, 10 / radius);
+		new_vertice_array[i] = normalize(old_vertice_array[i]) * radius * (1 + calculated_height * 0.1);
 	}
 }

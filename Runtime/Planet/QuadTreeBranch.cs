@@ -5,22 +5,6 @@ using UnityEngine;
 namespace PlanetEngine {
 
 	public struct BranchData {
-		#region Data Textures
-		public Texture2D BaseTexture {
-			get { return _baseTexture; }
-			set {
-				this._baseTexture = value;
-				this._heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
-				this._colorTexture = _baseTexture;
-			}
-		}
-		Texture2D _baseTexture;
-
-		public Texture2D HeightTexture { get { return _heightTexture; } }
-		Texture2D _heightTexture;
-		public Texture2D ColorTexture { get { return _colorTexture; } }
-		Texture2D _colorTexture;
-		#endregion
 
 		#region Branch Properties
 		public bool Divided;
@@ -30,11 +14,14 @@ namespace PlanetEngine {
 		#region Mesh Data
 		public Mesh planeMesh;
 		#endregion
+
+		#region Textures
+		public Texture2D ColorTexture { get { return _colorTexture; } }
+		Texture2D _colorTexture;
+		#endregion
+
 		public BranchData(PlanetData planetData, Rect zone) {
-			// Generate textures
-			_baseTexture = TextureTool.RegenerateBaseTextureForSubSurface(planetData.BaseTexture, zone, new RectInt(0, 0, 512, 512));
-			_heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
-			_colorTexture = _baseTexture;
+			_colorTexture = TextureTool.RegenerateBaseTextureForSubSurface(planetData.ColorTexture, zone, new RectInt(0, 0, 128, 128));
 			// Generate mesh
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
 			planeMesh = MeshTool.OffsetMesh(planeMesh, Vector3.up * 0.5f);
@@ -44,10 +31,7 @@ namespace PlanetEngine {
 		}
 
 		public BranchData(BranchData parentData, Rect zone) {
-			// Generate textures
-			_baseTexture = TextureTool.RegenerateBaseTextureForSubSurface(parentData.BaseTexture, zone, new RectInt(0, 0, 512, 512));
-			_heightTexture = TextureTool.GenerateHeightTextureThreaded(_baseTexture, 10);
-			_colorTexture = _baseTexture;
+			_colorTexture = TextureTool.RegenerateBaseTextureForSubSurface(parentData.ColorTexture, zone, new RectInt(0, 0, 128, 128));
 			// Generate mesh
 			Bounds parentMeshBounds = parentData.planeMesh.bounds;
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
@@ -76,7 +60,7 @@ namespace PlanetEngine {
 			Transform target = Camera.main.transform;
 			float targetDistance = Vector3.Distance(target.position, transform.position);
 			if (Divided) {
-				if (targetDistance > GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 1.2f) {
+				if (targetDistance > GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 1f) {
 					Divided = false;
 					foreach (QuadTreeBranch branch in GetComponentsInChildren<QuadTreeBranch>()) branch.Divided = false;
 					foreach (MeshRenderer childRenderer in GetComponentsInChildren<MeshRenderer>()) childRenderer.enabled = false;
@@ -88,7 +72,7 @@ namespace PlanetEngine {
 						child.GetComponent<QuadTreeBranch>().UpdateQuadTree();
 					}
 				}
-			} else if (targetDistance < GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude) {
+			} else if (targetDistance < GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 0.8f) {
 				if (_data.QuadDepth == 0) renderer.enabled = true;
 				if (_data.QuadDepth == planetData.MaxDepth) return;
 				if (transform.childCount == 0) CreateChildQuads();
@@ -106,18 +90,18 @@ namespace PlanetEngine {
 		// Root branch
 		public void CreateBranch(Planet planet, Rect zone) {
 			_data = new BranchData(planet.Data, zone);
-			CreateBranch();
+			ApplyBranchData();
 		}
 
 		// Non root branches
 		public void CreateBranch(QuadTreeBranch parent, Rect zone) {
 			_data = new BranchData(parent.Data, zone);
-			CreateBranch();
+			ApplyBranchData();
 		}
 
-		public void CreateBranch() {
+		void ApplyBranchData() {
 			ApplyMesh(_data.planeMesh);
-			ApplyTexture(_data.HeightTexture);
+			ApplyTexture(TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(_data.ColorTexture), Color.red, Color.yellow));
 		}
 
 		void ApplyMesh(Mesh planeMesh) {
@@ -125,8 +109,8 @@ namespace PlanetEngine {
 			Mesh curvedMesh = Instantiate(planeMesh);
 			curvedMesh = MeshTool.NormalizeAndAmplify(curvedMesh, planetData.Radius);
 			curvedMesh = MeshTool.SubdivideGPU(curvedMesh);
-            curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, _data.HeightTexture, planetData.Radius);
-            curvedMesh.RecalculateBounds();
+			curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, planetData.Radius, transform.localToWorldMatrix);
+			curvedMesh.RecalculateBounds();
 			Vector3 localMeshCenter = curvedMesh.bounds.center;
 			curvedMesh = MeshTool.OffsetMesh(curvedMesh, -localMeshCenter);
 			transform.position = transform.TransformPoint(localMeshCenter) - transform.parent.position;
@@ -167,8 +151,6 @@ namespace PlanetEngine {
 			lodGroup.SetLODs(lods);
 		}
 		#endregion
-
-
 
 	}
 }
