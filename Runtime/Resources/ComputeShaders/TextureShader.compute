@@ -2,6 +2,7 @@
 
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateBaseTexture
+#pragma kernel GenerateSideBaseTexture
 #pragma kernel RegenerateBaseTexture
 #pragma kernel GenerateHeightmapTexture
 #pragma kernel GenerateColorTexture
@@ -32,29 +33,31 @@ void GenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 	uint x = id.x;
 	uint y = id.y;
 	float4 value = 0;
-	
+	float x_value = ((float)id.x) / (width - 1);
+	float y_value = ((float)id.y) / (height - 1);
+
 	// Depending on the y value set properties
 	if(y < height / 3) {
 		value.y = 0;
-		value.z = 3 * ((float)y) / height;
+		value.z = 3 * y_value;
 	} else if (y < 2 * height / 3) {
-		value.y = 3 * ((float)y) / height - 1;
+		value.y = 3 * y_value - 1;
 	} else{
 		value.y = 1;
-		value.z = 3 * (1 - ((float)y) / height);
+		value.z = 3 * (1 - y_value);
 	}
 
 	// Depending on the x value set properties
 	if(x < width/4){
 		value.x = 1;
-		value.z = 4 * ((float) x) / width;
+		value.z = 4 * x_value;
 	} else if(x < width/2){
-		value.x = 2 - 4 * ((float) x) / width;
+		value.x = 2 - 4 * x_value;
 	} else if(x < 3*width/4){
 		value.x = 0;
-		value.z = 3 - 4 * ((float) x) / width;
+		value.z = 3 - 4 * x_value;
 	} else {
-		value.x = 4 * ((float) x) / width - 3;
+		value.x = 4 * x_value - 3;
 	}
 
 	if(x >= width/4 && x < width/2 && y >= height/3 && y < 2*height/3){
@@ -63,29 +66,85 @@ void GenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 	if (x > 3 * width / 4 && y >= height/3 && y <= 2 * height / 3) {
 		value.z = 0;
 	}
-	// Depending on the x and y value set visibility
-	if (width / 4 < x && x < width / 2) value.a = 1;
-	else if(height / 3 < y && y < 2* height / 3) value.a = 1;
-	value.xyz = normalize(value.xyz - 0.5);
-	value.xyz = (value.xyz + 1) / 2;
+	
+	value.xyz = value.xyz - 0.5;
+	value.a = length(value.xyz);
+	value.xyz = normalize(value.xyz);
 	base_texture_out[id.xy] = value;
 }
 
-float4 left_bottom_corner;
-float4 right_bottom_corner;
-float4 left_top_corner;
-float4 right_top_corner;
+uint side;
+
+[numthreads(1, 1, 1)]
+void GenerateSideBaseTexture(uint3 id : SV_DispatchThreadID)
+{
+	float4 value = 1;
+	float x_value = ((float)id.x) / (width-1);
+	float y_value = ((float)id.y) / (height-1);
+
+	if (side == 0) { // FRONT
+		value.x = lerp(1, 0, x_value);
+		value.y = lerp(0, 1, y_value);
+		value.z = 1;
+	} else if (side == 1) { // BACK
+		value.x = lerp(0, 1, x_value);
+		value.y = lerp(0, 1, y_value);
+		value.z = 0;
+	} else if (side == 2) { // LEFT
+		value.x = 1;
+		value.y = lerp(0, 1, y_value);
+		value.z = lerp(0, 1, x_value);
+	} else if (side == 3) { // RIGHT
+		value.x = 0;
+		value.y = lerp(0, 1, y_value);
+		value.z = lerp(1, 0, x_value);
+	} else if (side == 4) { // TOP
+		value.x = lerp(1, 0, x_value);
+		value.y = 1;
+		value.z = lerp(1, 0, y_value);
+	} else if (side == 5) { // BOTTOM
+		value.x = lerp(1, 0, x_value);
+		value.y = 0;
+		value.z = lerp(0, 1, y_value);
+	}
+	
+	value.xyz = value.xyz - 0.5;
+	value.a = length(value.xyz);
+	value.xyz = normalize(value.xyz);
+	base_texture_out[id.xy] = value;
+}
+
+int2 left_bottom_corner;
+int2 right_bottom_corner;
+int2 left_top_corner;
+int2 right_top_corner;
 
 [numthreads(1,1,1)]
 void RegenerateBaseTexture(uint3 id : SV_DispatchThreadID)
 {
-	float x_value = ((float) id.x) / width;
-	float y_value = ((float) id.y) / height;
-	float4 bottom_vec = lerp(left_bottom_corner, right_bottom_corner, x_value);
-	float4 top_vec = lerp(left_top_corner, right_top_corner, x_value);
-	float4 value = lerp(bottom_vec, top_vec, y_value);
-	value.xyz = normalize(value.xyz - 0.5);
-	value.xyz = (value.xyz + 1) / 2;
+	float x_value = ((float) id.x) / (width-1);
+	float y_value = ((float) id.y) / (height-1);
+	
+	float4 lb_vec = base_texture[left_bottom_corner];
+	float4 rb_vec = base_texture[right_bottom_corner];
+	float4 lt_vec = base_texture[left_top_corner];
+	float4 rt_vec = base_texture[right_top_corner];
+
+	float3 bottom_vec = lerp(
+		lb_vec.xyz * lb_vec.a,
+		rb_vec.xyz * rb_vec.a,
+		x_value
+	);
+	
+	float3 top_vec = lerp(
+		lt_vec.xyz * lt_vec.a,
+		rt_vec.xyz * rt_vec.a,
+		x_value
+	);
+	float3 cube_vec = lerp(bottom_vec, top_vec, y_value);
+	float4 value = float4(cube_vec, length(cube_vec));
+	
+	value.xyz = normalize(value.xyz);
 	base_texture_out[id.xy] = value;
 }
 

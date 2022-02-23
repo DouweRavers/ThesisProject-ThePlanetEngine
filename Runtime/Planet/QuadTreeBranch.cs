@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace PlanetEngine {
 
-	public struct BranchData {
+	internal struct BranchData {
 
 		#region Branch Properties
 		public bool Divided;
@@ -16,12 +16,12 @@ namespace PlanetEngine {
 		#endregion
 
 		#region Textures
-		public Texture2D ColorTexture { get { return _colorTexture; } }
-		Texture2D _colorTexture;
+		public Texture2D BaseTexture { get { return _baseTexture; } }
+		Texture2D _baseTexture;
 		#endregion
 
-		public BranchData(PlanetData planetData, Rect zone) {
-			_colorTexture = TextureTool.RegenerateBaseTextureForSubSurface(planetData.ColorTexture, zone, new RectInt(0, 0, 128, 128));
+		public BranchData(CubeSides side) {
+			_baseTexture = TextureTool.GenerateBaseTexture(128, 128, side);
 			// Generate mesh
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
 			planeMesh = MeshTool.OffsetMesh(planeMesh, Vector3.up * 0.5f);
@@ -31,7 +31,7 @@ namespace PlanetEngine {
 		}
 
 		public BranchData(BranchData parentData, Rect zone) {
-			_colorTexture = TextureTool.RegenerateBaseTextureForSubSurface(parentData.ColorTexture, zone, new RectInt(0, 0, 128, 128));
+			_baseTexture = TextureTool.GenerateBaseTexture(parentData.BaseTexture, zone);
 			// Generate mesh
 			Bounds parentMeshBounds = parentData.planeMesh.bounds;
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
@@ -46,7 +46,7 @@ namespace PlanetEngine {
 	[ExecuteInEditMode]
 	[RequireComponent(typeof(MeshRenderer))]
 	[RequireComponent(typeof(MeshFilter))]
-	public class QuadTreeBranch : MonoBehaviour {
+	internal class QuadTreeBranch : MonoBehaviour {
 		#region Planet engine Interface
 		public bool Divided { get { return _data.Divided; } private set { _data.Divided = value; } }
 		public BranchData Data { get { return _data; } }
@@ -69,27 +69,29 @@ namespace PlanetEngine {
 					renderer.enabled = false;
 					foreach (Transform child in transform) {
 						child.GetComponent<MeshRenderer>().enabled = true;
-						child.GetComponent<QuadTreeBranch>().UpdateQuadTree();
+						QuadTreeBranch quadTreeBranch;
+						if (child.TryGetComponent(out quadTreeBranch)) quadTreeBranch.UpdateQuadTree();
 					}
 				}
 			} else if (targetDistance < GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 0.8f) {
 				if (_data.QuadDepth == 0) renderer.enabled = true;
 				if (_data.QuadDepth == planetData.MaxDepth) return;
-				if (transform.childCount == 0) CreateChildQuads();
+				if (GetComponentsInChildren<QuadTreeBranch>().Length == 1) CreateChildQuads();
 				Divided = true;
 				renderer.enabled = false;
 				foreach (Transform child in transform) {
 					child.GetComponent<MeshRenderer>().enabled = true;
-					child.GetComponent<QuadTreeBranch>().UpdateQuadTree();
-				}
+					QuadTreeBranch quadTreeBranch;
+					if (child.TryGetComponent(out quadTreeBranch)) quadTreeBranch.UpdateQuadTree();
+					}
 			}
 		}
 		#endregion
 
 		#region Branch Creation methods
 		// Root branch
-		public void CreateBranch(Planet planet, Rect zone) {
-			_data = new BranchData(planet.Data, zone);
+		public void CreateBranch(CubeSides side) {
+			_data = new BranchData(side);
 			ApplyBranchData();
 		}
 
@@ -101,7 +103,7 @@ namespace PlanetEngine {
 
 		void ApplyBranchData() {
 			ApplyMesh(_data.planeMesh);
-			ApplyTexture(TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(_data.ColorTexture), Color.red, Color.yellow));
+			ApplyTexture(_data.BaseTexture);
 		}
 
 		void ApplyMesh(Mesh planeMesh) {
@@ -109,6 +111,7 @@ namespace PlanetEngine {
 			Mesh curvedMesh = Instantiate(planeMesh);
 			curvedMesh = MeshTool.NormalizeAndAmplify(curvedMesh, planetData.Radius);
 			curvedMesh = MeshTool.SubdivideGPU(curvedMesh);
+			Mesh seaMesh = Instantiate(curvedMesh);
 			curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, planetData.Radius, transform.localToWorldMatrix);
 			curvedMesh.RecalculateBounds();
 			Vector3 localMeshCenter = curvedMesh.bounds.center;
@@ -119,6 +122,7 @@ namespace PlanetEngine {
 			curvedMesh.RecalculateTangents();
 			curvedMesh.Optimize();
 			GetComponent<MeshFilter>().mesh = curvedMesh;
+			CreateSea(seaMesh);
 		}
 
 		void ApplyTexture(Texture2D texture) {
@@ -128,7 +132,6 @@ namespace PlanetEngine {
 		}
 
 		void CreateChildQuads() {
-			Renderer[] newRenderers = new Renderer[4];
 			for (int i = 0; i < 4; i++) {
 				GameObject ChildQuadObject = new GameObject(this.name + "." + i);
 				ChildQuadObject.transform.SetParent(transform);
@@ -141,15 +144,34 @@ namespace PlanetEngine {
 				else if (i == 2) zone = new Rect(0.5f, 0, 0.5f, 0.5f);
 				else zone = new Rect(0.5f, 0.5f, 0.5f, 0.5f);
 				ChildQuadObject.AddComponent<QuadTreeBranch>().CreateBranch(this, zone);
-				newRenderers[i] = ChildQuadObject.GetComponent<MeshRenderer>();
 			}
 			LODGroup lodGroup = GetComponentInParent<Planet>().GetComponent<LODGroup>();
 			LOD[] lods = lodGroup.GetLODs();
 			List<Renderer> quadRenderers = new List<Renderer>(lods[0].renderers);
-			quadRenderers.AddRange(newRenderers);
+			quadRenderers.AddRange(GetComponentsInChildren<Renderer>());
 			lods[0].renderers = quadRenderers.ToArray();
 			lodGroup.SetLODs(lods);
 		}
+
+		public void CreateSea(Mesh mesh)
+		{
+			mesh.RecalculateBounds();
+			Vector3 localMeshCenter = mesh.bounds.center;
+			mesh = MeshTool.OffsetMesh(mesh, -localMeshCenter);
+			mesh.RecalculateBounds();
+			mesh.RecalculateNormals();
+			mesh.RecalculateTangents();
+			mesh.Optimize();
+			GameObject seaObject = new GameObject("Ocean");
+			seaObject.AddComponent<MeshFilter>().mesh = mesh;
+			Material material = new Material(Shader.Find("Standard"));
+			material.color = Color.blue;
+			seaObject.AddComponent<MeshRenderer>().material = material;
+			seaObject.transform.parent = transform;
+			seaObject.transform.position = transform.TransformPoint(localMeshCenter) - transform.position;
+			seaObject.transform.localEulerAngles = Vector3.zero;
+		}
+
 		#endregion
 
 	}

@@ -6,8 +6,9 @@ using Unity.Collections;
 using System;
 
 namespace PlanetEngine {
+	internal enum CubeSides { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM }
 
-	public static class TextureTool {
+	internal static class TextureTool {
 		
 		public static Texture2D GenerateBaseTexture(int width, int height) {
 			ComputeShader textureShader = Resources.Load<ComputeShader>("ComputeShaders/TextureShader");
@@ -29,45 +30,68 @@ namespace PlanetEngine {
 			return outputTexture;
 		}
 
-		public static Texture2D RegenerateBaseTextureForSubSurface(Texture2D baseTexture, Rect zone, RectInt size)
+		public static Texture2D GenerateBaseTexture(int width, int height, CubeSides side)
+		{
+			ComputeShader textureShader = Resources.Load<ComputeShader>("ComputeShaders/TextureShader");
+			if (textureShader == null) Debug.LogWarning("No shader loaded");
+			int kernelIndex = textureShader.FindKernel("GenerateSideBaseTexture");
+
+			RenderTexture baseTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGBFloat);
+			baseTexture.enableRandomWrite = true;
+			baseTexture.Create();
+			textureShader.SetTexture(kernelIndex, "base_texture_out", baseTexture);
+			textureShader.SetInt("width", width);
+			textureShader.SetInt("height", height);
+			textureShader.SetInt("side", (int)side);
+			textureShader.Dispatch(kernelIndex, width, height, 1);
+			Texture2D outputTexture = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
+			outputTexture.filterMode = FilterMode.Point;
+			RenderTexture.active = baseTexture;
+			outputTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+			outputTexture.Apply();
+			return outputTexture;
+		}
+
+		public static Texture2D GenerateBaseTexture(Texture2D baseTexture, Rect zone)
 		{
 			ComputeShader textureShader = Resources.Load<ComputeShader>("ComputeShaders/TextureShader");
 			if (textureShader == null) Debug.LogWarning("No shader loaded");
 			int kernelIndex = textureShader.FindKernel("RegenerateBaseTexture");
 
 			// Output texture
-			RenderTexture renderTexture = new RenderTexture(size.width, size.height, 0, RenderTextureFormat.ARGBFloat);
+			RenderTexture renderTexture = new RenderTexture(baseTexture.width, baseTexture.height, 0, RenderTextureFormat.ARGBFloat);
 			renderTexture.enableRandomWrite = true;
 			renderTexture.Create();
 			textureShader.SetTexture(kernelIndex, "base_texture_out", renderTexture);
-			textureShader.SetInt("width", size.width - 1);
-			textureShader.SetInt("height", size.height - 1);
+			textureShader.SetInt("width", baseTexture.width);
+			textureShader.SetInt("height", baseTexture.height);
 
-			// Input vertices
-			Color[] vertexColors = new Color[]{
-				baseTexture.GetPixel(
-					Mathf.RoundToInt(baseTexture.width * zone.x),
-					Mathf.RoundToInt(baseTexture.height * zone.y)),
-				baseTexture.GetPixel(
-					Mathf.RoundToInt(baseTexture.width * (zone.x + zone.width))- 2,
-					Mathf.RoundToInt(baseTexture.height * zone.y)+ 1),
-				baseTexture.GetPixel(
-					Mathf.RoundToInt(baseTexture.width * zone.x)+ 1,
-					Mathf.RoundToInt(baseTexture.height * (zone.y + zone.height))- 2),
-				baseTexture.GetPixel(
-					Mathf.RoundToInt(baseTexture.width * (zone.x  + zone.width))- 2,
-					Mathf.RoundToInt(baseTexture.height * (zone.y + zone.height))-2)
-			};
-			textureShader.SetFloats("left_bottom_corner", new float[] { vertexColors[0].r, vertexColors[0].g, vertexColors[0].b, vertexColors[0].a });
-			textureShader.SetFloats("right_bottom_corner", new float[] { vertexColors[1].r, vertexColors[1].g, vertexColors[1].b, vertexColors[1].a });
-			textureShader.SetFloats("left_top_corner", new float[] { vertexColors[2].r, vertexColors[2].g, vertexColors[2].b, vertexColors[2].a });
-			textureShader.SetFloats("right_top_corner", new float[] { vertexColors[3].r, vertexColors[3].g, vertexColors[3].b, vertexColors[3].a });
+			textureShader.SetTexture(kernelIndex, "base_texture", baseTexture);
+			textureShader.SetInts("left_bottom_corner", new int[] {
+				Mathf.RoundToInt((baseTexture.width - 1) * zone.x), 
+				Mathf.RoundToInt((baseTexture.height - 1) * zone.y)
+			});
+			
+			textureShader.SetInts("right_bottom_corner", new int[] {
+				Mathf.RoundToInt((baseTexture.width - 1) * (zone.x + zone.width)),
+				Mathf.RoundToInt((baseTexture.height - 1) * zone.y)
+			});
+			
+			textureShader.SetInts("left_top_corner", new int[] {
+				Mathf.RoundToInt((baseTexture.width - 1) * zone.x),
+				Mathf.RoundToInt((baseTexture.height - 1) * (zone.y + zone.height))
+			});
+			
+			textureShader.SetInts("right_top_corner", new int[] {
+				Mathf.RoundToInt((baseTexture.width - 1) * (zone.x  + zone.width)),
+				Mathf.RoundToInt((baseTexture.height - 1) * (zone.y + zone.height))
+			});
 
-			textureShader.Dispatch(kernelIndex, size.width, size.height, 1);
-			Texture2D outputTexture = new Texture2D(size.width, size.height, TextureFormat.RGBAFloat, false);
+			textureShader.Dispatch(kernelIndex, baseTexture.width, baseTexture.height, 1);
+			Texture2D outputTexture = new Texture2D(baseTexture.width, baseTexture.height, TextureFormat.RGBAFloat, false);
 			outputTexture.filterMode = FilterMode.Point;
 			RenderTexture.active = renderTexture;
-			outputTexture.ReadPixels(new Rect(0, 0, size.width, size.height), 0, 0);
+			outputTexture.ReadPixels(new Rect(0, 0, baseTexture.width, baseTexture.height), 0, 0);
 			outputTexture.Apply();
 			return outputTexture;
 		}

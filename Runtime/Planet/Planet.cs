@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 
 namespace PlanetEngine {
-	public struct PlanetData {
+	internal struct PlanetData {
 		#region Celestial Properties
 		public float Radius;
 		#endregion
@@ -29,10 +29,10 @@ namespace PlanetEngine {
 	}
 
     [ExecuteInEditMode]
-	public class Planet : MonoBehaviour {
+	internal class Planet : MonoBehaviour {
 
 		#region DefaultValues
-		const float defaultRadius_c = 100f;
+		const float defaultRadius_c = 10f;
 		const int defaultMaxDepth_c = 12;
 		const int defaultLODlevels_c = 3;
 		#endregion
@@ -86,8 +86,8 @@ namespace PlanetEngine {
 				singleMeshObject.tag = "PlanetEngine";
 				singleMeshObject.transform.SetParent(transform);
 				SingleMeshLODInstance singleMeshLODInstance = singleMeshObject.AddComponent<SingleMeshLODInstance>();
-				singleMeshLODInstance.ApplyMesh(mesh, ref _data);
-                singleMeshLODInstance.ApplyTexture(TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(_data.ColorTexture), Color.red, Color.yellow));
+				singleMeshLODInstance.ApplyMesh(mesh, _data);
+				singleMeshLODInstance.ApplyTexture(_data.ColorTexture);
 				LODlist.Add(singleMeshObject.transform);
 			}
 		}
@@ -104,7 +104,7 @@ namespace PlanetEngine {
 			LOD[] lodArray = new LOD[LODlist.Count];
 			for (int i = 0; i < LODlist.Count; i++) {
 				lodArray[i].screenRelativeTransitionHeight = 0.8f * Mathf.Pow(1 - ((float)i / LODlist.Count), 3);
-				lodArray[i].renderers = (Renderer[])LODlist[i].GetComponentsInChildren<MeshRenderer>();
+				lodArray[i].renderers = LODlist[i].GetComponentsInChildren<MeshRenderer>();
 			}
 			LODGroup lodComponent = gameObject.AddComponent<LODGroup>();
 			lodComponent.SetLODs(lodArray);

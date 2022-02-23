@@ -1,13 +1,13 @@
 using UnityEditor;
 using UnityEngine;
-
+using System.Diagnostics;
 /**********************************************************************
- * 
- *                      The planet engine tool
- *      This class is the body of all other subtools. It will toggle between
- *      different subtools while providing a uniform style and layout.
- * 
- **********************************************************************/
+* 
+*                      The planet engine tool
+*      This class is the body of all other subtools. It will toggle between
+*      different subtools while providing a uniform style and layout.
+* 
+**********************************************************************/
 namespace PlanetEngine {
 
 	public static class InterfaceManager {
@@ -37,7 +37,11 @@ namespace PlanetEngine {
 		// All windows and functions are accessed by these static functions
 		[MenuItem("GameObject/3D Object/Planet", false, 40)]
 		public static void createPlanet() {
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
 			PlanetEngineEditor.CreatePlanet("Planet");
+			stopwatch.Stop();
+			UnityEngine.Debug.Log("Created planet in "+stopwatch.Elapsed.TotalSeconds+"seconds");
 		}
 
 		[MenuItem("Window/Planet Engine")]

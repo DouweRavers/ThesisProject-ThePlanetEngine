@@ -3,8 +3,7 @@ using UnityEngine;
 
 namespace PlanetEngine {
 
-	//internal
-	public static class MeshTool {
+	internal static class MeshTool {
 
 		/*###########################################
 		  #           Primitive Meshes              #
@@ -38,11 +37,13 @@ namespace PlanetEngine {
 			mesh.uv = newUV.ToArray();
 			return mesh;
 		}
+		
 		public static Mesh GenerateUnitQuadMesh(Vector2[] uvSubSpace) {
 			Mesh mesh = GenerateUnitQuadMesh();
 			mesh.uv = uvSubSpace;
 			return mesh;
 		}
+		
 		public static Mesh GenerateUnitCubeMesh() {
 
 			List<Vector3> newVertices = new List<Vector3>() {
@@ -326,28 +327,54 @@ namespace PlanetEngine {
 			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
 			meshShader.SetBuffer(kernelIndex, "new_uv_array", newUvBuffer);
 
-			int threads = Mathf.RoundToInt(indexes.Length / 3f);
-			meshShader.SetInt("maximum", threads);
-			if (60000 < threads) {
-				int factor = Mathf.CeilToInt(threads / 60000f);
-				meshShader.SetInt("batch", factor);
-				threads = 60000;
-			} else {
-				meshShader.SetInt("batch", 1);
+			for (int i = 0; i < depth; i++)
+            {
+				int threads = Mathf.RoundToInt(oldIndexBuffer.count / 3f);
+				meshShader.SetInt("maximum", threads);
+				if (60000 < threads) {
+					int factor = Mathf.CeilToInt(threads / 60000f);
+					meshShader.SetInt("batch", factor);
+					threads = 60000;
+				} else {
+					meshShader.SetInt("batch", 1);
+				}
+
+				meshShader.Dispatch(kernelIndex, threads, 1, 1);
+
+				if (i == depth - 1) break;
+
+				oldIndexBuffer.Dispose();
+				oldVertexBuffer.Dispose();
+				oldUvBuffer.Dispose();
+
+				oldIndexBuffer = newIndexBuffer;
+				oldVertexBuffer = newVertexBuffer;
+				oldUvBuffer = newUvBuffer;
+				
+				newIndexBuffer = new ComputeBuffer(oldIndexBuffer.count * 4, sizeof(int));
+				newVertexBuffer = new ComputeBuffer(oldIndexBuffer.count * 2, sizeof(float) * 3);
+				newUvBuffer = new ComputeBuffer(oldIndexBuffer.count * 2, sizeof(float) * 2);
+
+				meshShader.SetBuffer(kernelIndex, "old_index_array", oldIndexBuffer);
+				meshShader.SetBuffer(kernelIndex, "old_vertice_array", oldVertexBuffer);
+				meshShader.SetBuffer(kernelIndex, "old_uv_array", oldUvBuffer);
+				
+				meshShader.SetBuffer(kernelIndex, "new_index_array", newIndexBuffer);
+				meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
+				meshShader.SetBuffer(kernelIndex, "new_uv_array", newUvBuffer);
 			}
 
-			meshShader.Dispatch(kernelIndex, threads, 1, 1);
-			Vector3[] newVerices = new Vector3[indexes.Length * 2];
+			Vector3[] newVerices = new Vector3[newVertexBuffer.count];
 			newVertexBuffer.GetData(newVerices);
-			Vector2[] newUV = new Vector2[indexes.Length * 2];
+			Vector2[] newUV = new Vector2[newUvBuffer.count];
 			newUvBuffer.GetData(newUV);
-			int[] newIndexes = new int[indexes.Length * 4];
+			int[] newIndexes = new int[newIndexBuffer.count];
 			newIndexBuffer.GetData(newIndexes);
-
 
 			oldIndexBuffer.Dispose();
 			oldVertexBuffer.Dispose();
 			oldUvBuffer.Dispose();
+
 			newIndexBuffer.Dispose();
 			newVertexBuffer.Dispose();
 			newUvBuffer.Dispose();

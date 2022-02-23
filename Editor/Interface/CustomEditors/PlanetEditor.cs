@@ -3,7 +3,7 @@ using UnityEditor;
 
 namespace PlanetEngine {
 
-	// [CustomEditor(typeof(Planet))]
+	[CustomEditor(typeof(Planet))]
 	public class PlanetEditor : Editor {
 		static bool enableHide = true;
 		Planet planet;
