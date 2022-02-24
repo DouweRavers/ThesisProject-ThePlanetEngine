@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace PlanetEngine {
+	[ExecuteInEditMode]
 	[RequireComponent(typeof(MeshFilter))]
 	[RequireComponent(typeof(MeshRenderer))]
 	internal class OceanNode : MonoBehaviour
@@ -30,5 +31,12 @@ namespace PlanetEngine {
 			material.color = Color.blue;
 			GetComponent<MeshRenderer>().material = material;
 		}
-    }
+
+		public void ApplyTexture(Texture2D texture)
+		{
+			Material material = new Material(Shader.Find("Standard"));
+			material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture), Color.blue, Color.black);
+			GetComponent<MeshRenderer>().sharedMaterial = material;
+		}
+	}
 }

@@ -14,10 +14,9 @@ namespace PlanetEngine {
 
 	public static class PlanetEngine {
 		public static GameObject CreatePlanet(string planetName) {
-			GameObject planet = new GameObject();
-			planet.name = planetName;
+			GameObject planet = new GameObject(planetName);
 			planet.tag = "PlanetEngine";
-			planet.AddComponent<Planet>().CreateNewPlanet();
+			planet.AddComponent<Planet>();
 			return planet;
 		}
 	}

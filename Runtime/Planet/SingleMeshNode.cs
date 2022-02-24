@@ -2,13 +2,14 @@ using UnityEngine;
 
 namespace PlanetEngine {
 
+	[ExecuteInEditMode]
 	[RequireComponent(typeof(MeshRenderer))]
 	[RequireComponent(typeof(MeshFilter))]
 	internal class SingleMeshNode : MonoBehaviour {
 
 		public void CreateMesh(Mesh mesh, PlanetData data) {
 			ApplyMesh(mesh, data);
-			ApplyTexture(data.BaseTexture);
+			ApplyTexture(TextureTool.GenerateBaseTexture(255,255));
 		}
 
 		void ApplyMesh(Mesh mesh, PlanetData data)
@@ -27,12 +28,15 @@ namespace PlanetEngine {
 
 			GameObject seaObject = new GameObject("Ocean");
 			seaObject.transform.parent = transform;
-			seaObject.AddComponent<OceanNode>().CreateOcean(seaMesh, false);
+			OceanNode ocean = seaObject.AddComponent<OceanNode>();
+			ocean.CreateOcean(seaMesh, false);
+			ocean.ApplyTexture(TextureTool.GenerateBaseTexture(255, 255));
+
 		}
 
 		void ApplyTexture(Texture2D texture) {
 			Material material = new Material(Shader.Find("Standard"));
-			material.mainTexture = texture;
+			material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture), Color.yellow, Color.green); 
 			GetComponent<MeshRenderer>().sharedMaterial = material;
 		}
 	}

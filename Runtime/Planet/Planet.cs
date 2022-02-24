@@ -1,56 +1,87 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Collections;
+using System.Diagnostics;
 
 namespace PlanetEngine {
+	
 	public struct PlanetData {
+		#region Procedural Properties
+		public int Seed;
+		#endregion
+        
 		#region Celestial Properties
-		public float Radius;
+        public float Radius;
 		#endregion
 
-		#region Planet settings
+		#region Rendering Properties
 		public int MaxDepth;
 		public int LODSphereCount;
 		#endregion
 
-		#region Textures
-		public Texture2D BaseTexture { get { return _baseTexture; } }
-		Texture2D _baseTexture;
-		#endregion
 
-		#region Constructors
-		public PlanetData(float radius, int maxDepth, int lodSphereCount) {
-			_baseTexture = TextureTool.GenerateBaseTexture(256, 256);
-			Radius = radius;
-			MaxDepth = maxDepth;
-			LODSphereCount = lodSphereCount;
-		}
-		#endregion
-	}
-
-    [ExecuteInEditMode]
-	public class Planet : MonoBehaviour {
-
-		#region DefaultValues
+		#region Default Values
 		const float defaultRadius_c = 10f;
 		const int defaultMaxDepth_c = 12;
 		const int defaultLODlevels_c = 3;
 		#endregion
 
-		#region Planet Data access parameters
-		public int MaxDepth { get { return _data.MaxDepth; } set { _data.MaxDepth = value; } }
-		public float Radius { get { return _data.Radius; } set { _data.Radius = value; } }
-		public int LODSphereCount { get { return _data.LODSphereCount; } set { _data.LODSphereCount = value; } }
-		#endregion
+		public PlanetData(	
+			int seed, 
+			float radius = defaultRadius_c, 
+			int maxDepth = defaultMaxDepth_c, 
+			int lodSphereCount = defaultLODlevels_c)
+		{
+			Seed = seed;
+			Radius = radius;
+			MaxDepth = maxDepth;
+			LODSphereCount = lodSphereCount;
+		}
+	}
 
-		#region Planet Engine Interface parameters
-		[HideInInspector]
+    [ExecuteInEditMode]
+	public class Planet : MonoBehaviour {
+
+        #region Properties
+        
+		#endregion
+        
+		#region Planet Data 
+        [HideInInspector]
 		public PlanetData Data { get { return _data; } set { _data = value; } }
 		PlanetData _data;
-		#endregion
+        #endregion
 
-		#region Planet Engine Interface methods
-		public void CreateNewPlanet() {
+        IEnumerator Start() {
+
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+
+			CreateNewPlanet();
+
+			stopwatch.Stop();
+
+			int vertices = 0;
+			int triangles = 0;
+			foreach (MeshFilter meshFilter in GetComponentsInChildren<MeshFilter>())
+			{
+				vertices += meshFilter.sharedMesh.vertexCount;
+				triangles += meshFilter.sharedMesh.triangles.Length;
+			}
+			UnityEngine.Debug.Log("Created planet with " + vertices + " vertices and " + triangles + " triagles in " + stopwatch.Elapsed.TotalSeconds + "seconds");
+			yield return null;
+		}
+
+        #region Planet methods
+        public void CreateNewPlanet() {
+			// Remove previous structures
+			LODGroup lodComponent;
+			if (TryGetComponent(out lodComponent)) DestroyImmediate(lodComponent);
+			int childCount = transform.childCount;
+			for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
+
+			// (Re)generate
 			CreateNewPlanetData();
 			CreatePlanetFromData();
 		}
@@ -58,7 +89,7 @@ namespace PlanetEngine {
 
 		#region Data processing methods
 		void CreateNewPlanetData() {
-			Data = new PlanetData(defaultRadius_c, defaultMaxDepth_c, defaultLODlevels_c);
+			_data = new PlanetData(seed:100);
 		}
 
 		void LoadPlanetData() {

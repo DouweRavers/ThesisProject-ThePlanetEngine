@@ -3,9 +3,11 @@ float CalculateNoise(float3 vertex);
 
 
 float CalculateHeightValue(float3 vertex, float factor) {
-	float calculated_height = CalculateNoise(factor * vertex);
-	calculated_height += CalculateNoise(5 * factor * calculated_height * vertex) / 5;
-	return calculated_height;
+    float calculated_height = CalculateNoise(factor * vertex);
+    calculated_height += CalculateNoise(factor * vertex * 2) / 2;
+    calculated_height += CalculateNoise(factor * vertex * 5) / 5;
+	
+    return calculated_height;
 }
 
 float CalculateNoise(float3 vertex) {

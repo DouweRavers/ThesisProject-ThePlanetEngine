@@ -137,12 +137,14 @@ namespace PlanetEngine {
 			
 			GameObject seaObject = new GameObject("Ocean");
 			seaObject.transform.parent = transform;
-			seaObject.AddComponent<OceanNode>().CreateOcean(seaMesh, true);
+			OceanNode ocean = seaObject.AddComponent<OceanNode>();
+			ocean.CreateOcean(seaMesh, true);
+			ocean.ApplyTexture(_data.BaseTexture);
 		}
 
 		void ApplyTexture(Texture2D texture) {
 			Material material = new Material(Shader.Find("Standard"));
-            material.mainTexture = texture;
+            material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture), Color.yellow, Color.green);
             GetComponent<MeshRenderer>().material = material;
 		}
 
