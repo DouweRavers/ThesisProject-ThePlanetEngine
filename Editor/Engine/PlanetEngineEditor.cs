@@ -1,6 +1,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using System.Diagnostics;
 
 
 /**********************************************************************
@@ -17,9 +18,22 @@ namespace PlanetEngine {
 	[Serializable]
 	public static class PlanetEngineEditor {
 		public static void CreatePlanet(string planetName) {
+
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+
 			EditorConfigurator.CreateTag("PlanetEngine");
 			GameObject planet = PlanetEngine.CreatePlanet(planetName);
 			Selection.activeTransform = planet.transform;
+
+			stopwatch.Stop();
+			int vertices = 0;
+			int triangles = 0;
+			foreach (MeshFilter meshFilter in planet.GetComponentsInChildren<MeshFilter>()) {
+				vertices += meshFilter.sharedMesh.vertexCount;
+				triangles += meshFilter.sharedMesh.triangles.Length;
+			}
+			UnityEngine.Debug.Log("Created planet with " + vertices + " vertices and " + triangles + " triagles in " + stopwatch.Elapsed.TotalSeconds + "seconds");
 		}
 
 		public static bool isSelectedObjectPlanet() {

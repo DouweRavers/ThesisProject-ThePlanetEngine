@@ -1,6 +1,5 @@
 using UnityEditor;
 using UnityEngine;
-using System.Diagnostics;
 /**********************************************************************
 * 
 *                      The planet engine tool
@@ -37,11 +36,7 @@ namespace PlanetEngine {
 		// All windows and functions are accessed by these static functions
 		[MenuItem("GameObject/3D Object/Planet", false, 40)]
 		public static void createPlanet() {
-			Stopwatch stopwatch = new Stopwatch();
-			stopwatch.Start();
 			PlanetEngineEditor.CreatePlanet("Planet");
-			stopwatch.Stop();
-			UnityEngine.Debug.Log("Created planet in "+stopwatch.Elapsed.TotalSeconds+"seconds");
 		}
 
 		[MenuItem("Window/Planet Engine")]

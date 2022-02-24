@@ -5,12 +5,7 @@ using UnityEngine;
 namespace PlanetEngine {
 
 	internal struct BranchData {
-
-		#region Branch Properties
-		public bool Divided;
 		public int QuadDepth;
-		#endregion
-
 		#region Mesh Data
 		public Mesh planeMesh;
 		#endregion
@@ -26,7 +21,6 @@ namespace PlanetEngine {
 			planeMesh = MeshTool.GenerateUnitQuadMesh();
 			planeMesh = MeshTool.OffsetMesh(planeMesh, Vector3.up * 0.5f);
 			for (int subdiv = 0; subdiv < 5; subdiv++) { planeMesh = MeshTool.SubdivideGPU(planeMesh); }
-			Divided = false;
 			QuadDepth = 0;
 		}
 
@@ -38,7 +32,6 @@ namespace PlanetEngine {
 			planeMesh = MeshTool.NormalizeAndAmplify(planeMesh, parentMeshBounds.size.magnitude / 4f);
 			planeMesh = MeshTool.OffsetMesh(planeMesh, parentMeshBounds.center + new Vector3(zone.x - 0.25f, 0, zone.y - 0.25f) * 2f * parentMeshBounds.extents.x);
 			for (int subdiv = 0; subdiv < 5; subdiv++) { planeMesh = MeshTool.SubdivideGPU(planeMesh); }
-			Divided = false;
 			QuadDepth = parentData.QuadDepth + 1;
 		}
 	}
@@ -46,44 +39,63 @@ namespace PlanetEngine {
 	[ExecuteInEditMode]
 	[RequireComponent(typeof(MeshRenderer))]
 	[RequireComponent(typeof(MeshFilter))]
-	internal class QuadTreeBranch : MonoBehaviour {
-		#region Planet engine Interface
-		public bool Divided { get { return _data.Divided; } private set { _data.Divided = value; } }
-		public BranchData Data { get { return _data; } }
-		BranchData _data;
+	internal class QuadTreeBranchNode : MonoBehaviour {
+		#region Properties
+		public bool Visible
+		{
+			get { return GetComponent<MeshRenderer>().enabled; }
+			set { 
+				GetComponent<MeshRenderer>().enabled = value;
+				OceanNode oceanNode = GetComponentInChildren<OceanNode>();
+				if (oceanNode != null) oceanNode.Visible = value;
+			}
+		}
+		public bool Divided = false;
+
+		Transform target = null;
 		#endregion
 
-		#region Branching Process
-		public void UpdateQuadTree() {
-			PlanetData planetData = GetComponentInParent<Planet>().Data;
-			MeshRenderer renderer = GetComponent<MeshRenderer>();
-			Transform target = Camera.main.transform;
+		#region Planet engine Interface
+		public BranchData Data { get { return _data; } }
+		BranchData _data;
+        #endregion
+
+        #region Branching Process
+        public void UpdateQuadTree() {
+			if(target == null) target = Camera.main.transform;
 			float targetDistance = Vector3.Distance(target.position, transform.position);
 			if (Divided) {
-				if (targetDistance > GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 1f) {
-					Divided = false;
-					foreach (QuadTreeBranch branch in GetComponentsInChildren<QuadTreeBranch>()) branch.Divided = false;
-					foreach (MeshRenderer childRenderer in GetComponentsInChildren<MeshRenderer>()) childRenderer.enabled = false;
-					renderer.enabled = true;
-				} else {
-					renderer.enabled = false;
-					foreach (Transform child in transform) {
-						child.GetComponent<MeshRenderer>().enabled = true;
-						QuadTreeBranch quadTreeBranch;
-						if (child.TryGetComponent(out quadTreeBranch)) quadTreeBranch.UpdateQuadTree();
-					}
-				}
-			} else if (targetDistance < GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 0.8f) {
-				if (_data.QuadDepth == 0) renderer.enabled = true;
-				if (_data.QuadDepth == planetData.MaxDepth) return;
-				if (GetComponentsInChildren<QuadTreeBranch>().Length == 1) CreateChildQuads();
-				Divided = true;
-				renderer.enabled = false;
-				foreach (Transform child in transform) {
-					child.GetComponent<MeshRenderer>().enabled = true;
-					QuadTreeBranch quadTreeBranch;
-					if (child.TryGetComponent(out quadTreeBranch)) quadTreeBranch.UpdateQuadTree();
-					}
+				if (targetDistance > GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 1f) QuadTreeShrink();
+				else QuadTreeUpdateChildBranches();
+			} else if (targetDistance < GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 0.8f) QuadTreeExpand();
+		}
+
+		void QuadTreeShrink() {
+			foreach (QuadTreeBranchNode branch in GetComponentsInChildren<QuadTreeBranchNode>()) {
+				branch.Divided = false;
+				branch.Visible = false;
+			}
+			Visible = true;
+		}
+
+		void QuadTreeUpdateChildBranches() {
+			if (Visible) {
+				Visible = false;
+				foreach (QuadTreeBranchNode branch in GetComponentsInChildren<QuadTreeBranchNode>()) branch.Visible = true;
+			}
+			foreach (QuadTreeBranchNode branch in GetComponentsInChildren<QuadTreeBranchNode>()) if(branch != this) branch.UpdateQuadTree();
+		}
+
+		void QuadTreeExpand() {
+			if (_data.QuadDepth == 0) Visible = true;
+			if (_data.QuadDepth == GetComponentInParent<Planet>().Data.MaxDepth) return;
+			if (GetComponentsInChildren<QuadTreeBranchNode>().Length < 2) CreateChildQuads();
+			Divided = true;
+			Visible = false;
+			foreach (QuadTreeBranchNode branch in GetComponentsInChildren<QuadTreeBranchNode>()) {
+				if (branch == this) continue;
+				branch.Visible = true;
+				branch.UpdateQuadTree();
 			}
 		}
 		#endregion
@@ -96,7 +108,7 @@ namespace PlanetEngine {
 		}
 
 		// Non root branches
-		public void CreateBranch(QuadTreeBranch parent, Rect zone) {
+		public void CreateBranch(QuadTreeBranchNode parent, Rect zone) {
 			_data = new BranchData(parent.Data, zone);
 			ApplyBranchData();
 		}
@@ -117,12 +129,15 @@ namespace PlanetEngine {
 			Vector3 localMeshCenter = curvedMesh.bounds.center;
 			curvedMesh = MeshTool.OffsetMesh(curvedMesh, -localMeshCenter);
 			transform.position = transform.TransformPoint(localMeshCenter) - transform.parent.position;
-			curvedMesh.RecalculateBounds();
+			curvedMesh.RecalculateBounds(); 
 			curvedMesh.RecalculateNormals();
 			curvedMesh.RecalculateTangents();
 			curvedMesh.Optimize();
 			GetComponent<MeshFilter>().mesh = curvedMesh;
-			CreateSea(seaMesh);
+			
+			GameObject seaObject = new GameObject("Ocean");
+			seaObject.transform.parent = transform;
+			seaObject.AddComponent<OceanNode>().CreateOcean(seaMesh, true);
 		}
 
 		void ApplyTexture(Texture2D texture) {
@@ -143,7 +158,7 @@ namespace PlanetEngine {
 				else if (i == 1) zone = new Rect(0, 0.5f, 0.5f, 0.5f);
 				else if (i == 2) zone = new Rect(0.5f, 0, 0.5f, 0.5f);
 				else zone = new Rect(0.5f, 0.5f, 0.5f, 0.5f);
-				ChildQuadObject.AddComponent<QuadTreeBranch>().CreateBranch(this, zone);
+				ChildQuadObject.AddComponent<QuadTreeBranchNode>().CreateBranch(this, zone);
 			}
 			LODGroup lodGroup = GetComponentInParent<Planet>().GetComponent<LODGroup>();
 			LOD[] lods = lodGroup.GetLODs();
@@ -152,26 +167,6 @@ namespace PlanetEngine {
 			lods[0].renderers = quadRenderers.ToArray();
 			lodGroup.SetLODs(lods);
 		}
-
-		public void CreateSea(Mesh mesh)
-		{
-			mesh.RecalculateBounds();
-			Vector3 localMeshCenter = mesh.bounds.center;
-			mesh = MeshTool.OffsetMesh(mesh, -localMeshCenter);
-			mesh.RecalculateBounds();
-			mesh.RecalculateNormals();
-			mesh.RecalculateTangents();
-			mesh.Optimize();
-			GameObject seaObject = new GameObject("Ocean");
-			seaObject.AddComponent<MeshFilter>().mesh = mesh;
-			Material material = new Material(Shader.Find("Standard"));
-			material.color = Color.blue;
-			seaObject.AddComponent<MeshRenderer>().material = material;
-			seaObject.transform.parent = transform;
-			seaObject.transform.position = transform.TransformPoint(localMeshCenter) - transform.position;
-			seaObject.transform.localEulerAngles = Vector3.zero;
-		}
-
 		#endregion
 
 	}

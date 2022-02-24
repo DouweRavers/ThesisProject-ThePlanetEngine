@@ -5,11 +5,11 @@ using UnityEngine;
 namespace PlanetEngine {
 
 	[ExecuteInEditMode]
-	internal class QuadTreeRoot : MonoBehaviour {
+	internal class QuadTreeRootNode : MonoBehaviour {
 		
 		void Update() {
 			foreach (Transform child in transform) {
-				child.GetComponent<QuadTreeBranch>().UpdateQuadTree();
+				child.GetComponent<QuadTreeBranchNode>().UpdateQuadTree();
 			}
 		}
 
@@ -53,7 +53,7 @@ namespace PlanetEngine {
 						side = CubeSides.RIGHT;
 						break;
 				}
-				rootBranchObject.AddComponent<QuadTreeBranch>().CreateBranch(side);
+				rootBranchObject.AddComponent<QuadTreeBranchNode>().CreateBranch(side);
 			}
 		}
 	}

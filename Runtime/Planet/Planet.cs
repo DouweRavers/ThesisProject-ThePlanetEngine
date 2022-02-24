@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 
 namespace PlanetEngine {
-	internal struct PlanetData {
+	public struct PlanetData {
 		#region Celestial Properties
 		public float Radius;
 		#endregion
@@ -14,13 +14,13 @@ namespace PlanetEngine {
 		#endregion
 
 		#region Textures
-		public Texture2D ColorTexture { get { return _colorTexture; } }
-		Texture2D _colorTexture;
+		public Texture2D BaseTexture { get { return _baseTexture; } }
+		Texture2D _baseTexture;
 		#endregion
 
 		#region Constructors
 		public PlanetData(float radius, int maxDepth, int lodSphereCount) {
-			_colorTexture = TextureTool.GenerateBaseTexture(256, 256);
+			_baseTexture = TextureTool.GenerateBaseTexture(256, 256);
 			Radius = radius;
 			MaxDepth = maxDepth;
 			LODSphereCount = lodSphereCount;
@@ -29,7 +29,7 @@ namespace PlanetEngine {
 	}
 
     [ExecuteInEditMode]
-	internal class Planet : MonoBehaviour {
+	public class Planet : MonoBehaviour {
 
 		#region DefaultValues
 		const float defaultRadius_c = 10f;
@@ -85,9 +85,7 @@ namespace PlanetEngine {
 				GameObject singleMeshObject = new GameObject(gameObject.name + " - LODSphere: " + i);
 				singleMeshObject.tag = "PlanetEngine";
 				singleMeshObject.transform.SetParent(transform);
-				SingleMeshLODInstance singleMeshLODInstance = singleMeshObject.AddComponent<SingleMeshLODInstance>();
-				singleMeshLODInstance.ApplyMesh(mesh, _data);
-				singleMeshLODInstance.ApplyTexture(_data.ColorTexture);
+				singleMeshObject.AddComponent<SingleMeshNode>().CreateMesh(mesh, _data);
 				LODlist.Add(singleMeshObject.transform);
 			}
 		}
@@ -96,7 +94,7 @@ namespace PlanetEngine {
 			GameObject quadRootObject = new GameObject(gameObject.name + " - QuadRoot");
 			quadRootObject.tag = "PlanetEngine";
 			quadRootObject.transform.SetParent(transform);
-			quadRootObject.AddComponent<QuadTreeRoot>().CreateQuadTree();
+			quadRootObject.AddComponent<QuadTreeRootNode>().CreateQuadTree();
 			LODlist.Add(quadRootObject.transform);
 		}
 
