@@ -1,0 +1,130 @@
+#pragma enable_d3d11_debug_symbols
+#pragma kernel NormalizeAndAmplify
+#pragma kernel Offset
+#pragma kernel SubdivideMesh
+#pragma kernel ApplyHeightmap
+
+// Batching values
+int batch;
+int maximum;
+
+// Mesh Buffers
+StructuredBuffer<int> old_index_array;
+StructuredBuffer<float3> old_vertice_array;
+StructuredBuffer<float2> old_uv_array;
+
+RWStructuredBuffer<int> new_index_array;
+RWStructuredBuffer<float3> new_vertice_array;
+RWStructuredBuffer<float2> new_uv_array;
+
+// Convert shape to sphere with given size
+float amplifier;
+
+[numthreads(1,1,1)]
+void NormalizeAndAmplify(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+    	new_vertice_array[i] = amplifier * normalize(old_vertice_array[i]);
+	}
+}
+
+// Translate vertices in local space (in mesh data)  
+float3 offset_vector;
+
+[numthreads(1,1,1)]
+void Offset(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		new_vertice_array[i] = old_vertice_array[i] + offset_vector;
+	}
+}
+
+
+// Subdivide mesh 
+//          A
+//	A       |  
+//	|  =>   Z-X
+//	C-B     | |  
+//          C-Y-B
+
+[numthreads(1, 1, 1)]
+void SubdivideMesh(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		int i_base = i * 3;
+		int i_a = old_index_array[i_base];
+		int i_b = old_index_array[i_base + 1];
+		int i_c = old_index_array[i_base + 2];
+
+		float3 A = old_vertice_array[i_a];
+		float3 B = old_vertice_array[i_b];
+		float3 C = old_vertice_array[i_c];
+
+		float2 Auv = old_uv_array[i_a];
+		float2 Buv = old_uv_array[i_b];
+		float2 Cuv = old_uv_array[i_c];
+
+		float3 X = lerp(A, B, 0.5);
+		float3 Y = lerp(B, C, 0.5);
+		float3 Z = lerp(C, A, 0.5);
+		
+		float2 Xuv = lerp(Auv, Buv, 0.5);
+		float2 Yuv = lerp(Buv, Cuv, 0.5);
+		float2 Zuv = lerp(Cuv, Auv, 0.5);
+
+
+		i_base = i * 6;
+		i_a = i_base;
+		i_b = i_base + 1;
+		i_c = i_base + 2;
+		int i_x = i_base + 3;
+		int i_y = i_base + 4;
+		int i_z = i_base + 5;
+
+		new_vertice_array[i_a] = A;
+		new_vertice_array[i_b] = B;
+		new_vertice_array[i_c] = C;
+		new_vertice_array[i_x] = X;
+		new_vertice_array[i_y] = Y;
+		new_vertice_array[i_z] = Z;
+
+		new_uv_array[i_a] = Auv;
+		new_uv_array[i_b] = Buv;
+		new_uv_array[i_c] = Cuv;
+		new_uv_array[i_x] = Xuv;
+		new_uv_array[i_y] = Yuv;
+		new_uv_array[i_z] = Zuv;
+		
+		i_base = i * 12;
+		new_index_array[i_base] = i_a;
+		new_index_array[i_base + 1] = i_x;
+		new_index_array[i_base + 2] = i_z;
+
+		new_index_array[i_base + 3] = i_x;
+		new_index_array[i_base + 4] = i_b;
+		new_index_array[i_base + 5] = i_y;
+
+		new_index_array[i_base + 6] = i_z;
+		new_index_array[i_base + 7] = i_y;
+		new_index_array[i_base + 8] = i_c;
+
+		new_index_array[i_base + 9] = i_z;
+		new_index_array[i_base + 10] = i_x;
+		new_index_array[i_base + 11] = i_y;
+	}
+}
+
+float radius; 
+float4x4 object_to_world;
+
+
+[numthreads(1,1,1)]
+void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
+{
+}

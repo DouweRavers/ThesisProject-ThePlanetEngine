@@ -124,7 +124,7 @@ namespace PlanetEngine {
 			curvedMesh = MeshTool.NormalizeAndAmplify(curvedMesh, planetData.Radius);
 			curvedMesh = MeshTool.SubdivideGPU(curvedMesh);
 			Mesh seaMesh = Instantiate(curvedMesh);
-			curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, planetData.Radius, transform.localToWorldMatrix);
+			//curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, planetData, transform.localToWorldMatrix);
 			curvedMesh.RecalculateBounds();
 			Vector3 localMeshCenter = curvedMesh.bounds.center;
 			curvedMesh = MeshTool.OffsetMesh(curvedMesh, -localMeshCenter);
@@ -138,13 +138,14 @@ namespace PlanetEngine {
 			GameObject seaObject = new GameObject("Ocean");
 			seaObject.transform.parent = transform;
 			OceanNode ocean = seaObject.AddComponent<OceanNode>();
-			ocean.CreateOcean(seaMesh, true);
+			ocean.CreateOcean(seaMesh);
 			ocean.ApplyTexture(_data.BaseTexture);
 		}
 
 		void ApplyTexture(Texture2D texture) {
 			Material material = new Material(Shader.Find("Standard"));
-            material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture), Color.yellow, Color.green);
+			PlanetData planetData = GetComponentInParent<Planet>().Data;
+			//material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture, planetData.Seed), planetData.ColorA, planetData.ColorB);
             GetComponent<MeshRenderer>().material = material;
 		}
 

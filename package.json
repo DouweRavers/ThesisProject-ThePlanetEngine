@@ -8,18 +8,8 @@
     "email": "douwe.raverss@gmail.com",
     "url": "https://douwco.com/"
   },
-  "scopedRegistries": [
-    {
-      "name": "Keijiro",
-      "url": "https://registry.npmjs.com",
-      "scopes": [
-        "jp.keijiro"
-      ]
-    }
-  ],
   "dependencies": {
     "com.unity.burst": "1.6.3",
-    "com.unity.jobs": "0.11.0-preview.6",
-    "jp.keijiro.noiseshader": "2.0.0"
+    "com.unity.jobs": "0.11.0-preview.6"
   }
 }

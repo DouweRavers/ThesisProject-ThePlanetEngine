@@ -13,13 +13,11 @@ namespace PlanetEngine {
 			set { GetComponent<MeshRenderer>().enabled = value; } 
 		}
 
-		public void CreateOcean(Mesh mesh, bool isBranch) {
-			if (isBranch) {
-				mesh.RecalculateBounds();
-				Vector3 localMeshCenter = mesh.bounds.center;
-				mesh = MeshTool.OffsetMesh(mesh, -localMeshCenter);
-				transform.position = transform.parent.TransformPoint(localMeshCenter) - transform.parent.position;
-			} else transform.localPosition = Vector3.zero;
+		public void CreateOcean(Mesh mesh) {
+			mesh.RecalculateBounds();
+			Vector3 localMeshCenter = mesh.bounds.center;
+			mesh = MeshTool.OffsetMesh(mesh, -localMeshCenter);
+			transform.position = transform.parent.TransformPoint(localMeshCenter) - transform.parent.position;
 			transform.localEulerAngles = Vector3.zero;
 			mesh.RecalculateBounds();
 			mesh.RecalculateNormals();
@@ -35,7 +33,8 @@ namespace PlanetEngine {
 		public void ApplyTexture(Texture2D texture)
 		{
 			Material material = new Material(Shader.Find("Standard"));
-			material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture), Color.blue, Color.black);
+			PlanetData planetData = GetComponentInParent<Planet>().Data;
+			//material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture, planetData.Seed), planetData.ColorC, planetData.ColorD);
 			GetComponent<MeshRenderer>().sharedMaterial = material;
 		}
 	}

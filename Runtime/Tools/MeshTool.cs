@@ -145,7 +145,6 @@ namespace PlanetEngine {
 		  #                 Modifiers               #
 		  ###########################################*/
 
-		// CPU based. slow but minimal best mesh result
 		public static Mesh SubdivideCPU(Mesh mesh, int depth = 1) {
 			if (depth <= 0) {
 				return mesh; // end recursive loop
@@ -299,7 +298,6 @@ namespace PlanetEngine {
 			return SubdivideCPU(mesh, depth - 1); // recursive
 		}
 
-		// GPU based. fast but inefficient mesh
 		public static Mesh SubdivideGPU(Mesh mesh, int depth = 1) {
 			int[] indexes = mesh.triangles;
 			Vector3[] vertices = mesh.vertices;
@@ -315,7 +313,7 @@ namespace PlanetEngine {
 			ComputeBuffer newVertexBuffer = new ComputeBuffer(indexes.Length * 2, sizeof(float) * 3);
 			ComputeBuffer newUvBuffer = new ComputeBuffer(indexes.Length * 2, sizeof(float) * 2);
 
-			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			ComputeShader meshShader = Resources.Load<ComputeShader>("MeshShaders/MeshShader");
 			if (meshShader == null) Debug.LogWarning("No shader loaded");
 			int kernelIndex = meshShader.FindKernel("SubdivideMesh");
 
@@ -388,7 +386,7 @@ namespace PlanetEngine {
 		public static Mesh NormalizeAndAmplify(Mesh mesh, float gain) {
 			Vector3[] vertices = mesh.vertices;
 
-			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			ComputeShader meshShader = Resources.Load<ComputeShader>("MeshShaders/MeshShader");
 			if (meshShader == null) Debug.LogWarning("No shader loaded");
 
 			int kernelIndex = meshShader.FindKernel("NormalizeAndAmplify");
@@ -423,7 +421,7 @@ namespace PlanetEngine {
 		public static Mesh OffsetMesh(Mesh mesh, Vector3 offset) {
 			Vector3[] vertices = mesh.vertices;
 
-			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
+			ComputeShader meshShader = Resources.Load<ComputeShader>("MeshShaders/MeshShader");
 			if (meshShader == null) Debug.LogWarning("No shader loaded");
 
 			int kernelIndex = meshShader.FindKernel("Offset");
@@ -506,14 +504,16 @@ namespace PlanetEngine {
 
 			return meshes;
 		}
-
-		public static Mesh ApplyHeightmap(Mesh mesh, float radius, Matrix4x4 localToWorld) {
+		/*
+		public static Mesh ApplyHeightmap(Mesh mesh, PlanetData data, Matrix4x4 localToWorld) {
 			Vector3[] vertices = mesh.vertices;
-			
+			ProceduralAlgorithm algorithm = ScriptableObject.CreateInstance<ProceduralAlgorithm>();
+			algorithm.Initalize();
+
 			ComputeShader meshShader = Resources.Load<ComputeShader>("ComputeShaders/MeshShader");
 			if (meshShader == null) Debug.LogWarning("No shader loaded");
-
 			int kernelIndex = meshShader.FindKernel("ApplyHeightmap");
+			
 			// Pass vertices to shader
 			ComputeBuffer oldVertexBuffer = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
 			oldVertexBuffer.SetData(vertices);
@@ -522,8 +522,22 @@ namespace PlanetEngine {
 			meshShader.SetBuffer(kernelIndex, "new_vertice_array", newVertexBuffer);
 
 			// Pass context data to shader
-			meshShader.SetFloat("radius", radius);
+			meshShader.SetInt("seed", data.Seed);
+			meshShader.SetFloat("radius", data.Radius);
 			meshShader.SetMatrix("object_to_world", localToWorld);
+			// Set procedural data
+			ComputeBuffer tectonicLocations = new ComputeBuffer(algorithm.TectonicLocations.Length, sizeof(float) * 3);
+			tectonicLocations.SetData(algorithm.TectonicLocations);
+			meshShader.SetBuffer(kernelIndex, "tectonic_locations", tectonicLocations);
+			ComputeBuffer tectonicForces = new ComputeBuffer(algorithm.TectonicForces.Length, sizeof(float) * 3);
+			tectonicForces.SetData(algorithm.TectonicForces);
+			meshShader.SetBuffer(kernelIndex, "tectonic_forces", tectonicForces);
+			ComputeBuffer tectonicHeigts = new ComputeBuffer(algorithm.TectonicHeigts.Length, sizeof(float));
+			tectonicHeigts.SetData(algorithm.TectonicHeigts);
+			meshShader.SetBuffer(kernelIndex, "tectonic_heights", tectonicHeigts);
+
+
+
 
 			// Pass batch size to shader
 			int threads = Mathf.RoundToInt(vertices.Length);
@@ -541,9 +555,13 @@ namespace PlanetEngine {
 			newVertexBuffer.GetData(vertices);
 			oldVertexBuffer.Dispose();
 			newVertexBuffer.Dispose();
+
+			tectonicLocations.Dispose();
+			tectonicForces.Dispose();
+			tectonicHeigts.Dispose();
 			mesh.vertices = vertices;
 			return mesh;
-		}
+		}*/
 	}
 
 }
