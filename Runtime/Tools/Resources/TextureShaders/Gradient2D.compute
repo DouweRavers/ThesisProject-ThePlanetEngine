@@ -1,0 +1,48 @@
+#pragma enable_d3d11_debug_symbols
+#pragma kernel GenerateGradient2DTexture
+
+// Texture data
+uint height;
+uint width;
+
+// Data
+StructuredBuffer<float4> point_color;
+StructuredBuffer<float2> point_position;
+StructuredBuffer<float> point_weight;
+int point_count;
+float smooth;
+
+// Output
+RWTexture2D<float4> gradient_texture_out;
+
+
+[numthreads(1, 1, 1)]
+void GenerateGradient2DTexture(uint3 id : SV_DispatchThreadID)
+{
+    float x = (float) id.x / width;
+    float y = (float) id.y / height;
+    
+    
+    float4 color_sum = 0;
+    float weight_sum = 0;
+    for (int i = 0; i < point_count; i++)
+    {
+        float dist = distance(point_position[i], float2(x, y));
+        dist = pow(dist, smooth);
+        if (dist == 0)
+        {
+            weight_sum = 0;
+            color_sum = point_color[i];
+            break;
+        }
+        else
+        {
+            float weight = 1 / dist * point_weight[i];
+            color_sum += point_color[i] * weight;
+            weight_sum += weight;
+        }
+    }
+    if (weight_sum != 0) color_sum /= weight_sum;
+    color_sum.a = 1;
+    gradient_texture_out[id.xy] = color_sum;
+}

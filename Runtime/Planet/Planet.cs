@@ -8,7 +8,7 @@ namespace PlanetEngine
 
         #region Properties
         public PlanetData Data { get { return _data; } set { _data = value; } }
-        PlanetData _data = new PlanetData(100);
+        PlanetData _data = new PlanetData();
         #endregion
 
         #region Events
@@ -25,13 +25,13 @@ namespace PlanetEngine
             int childCount = transform.childCount;
             for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
 
-            if (_data.Seed == 0) _data = new PlanetData(UnityEngine.Random.Range(0, 1000));
+            if (_data.Seed == 0) _data = new PlanetData();
             CreatePlanetFromData();
         }
 
         public void CreateNewPlanet(int seed)
         {
-            _data = new PlanetData(seed);
+            _data = new PlanetData();
             CreateNewPlanet();
         }
 

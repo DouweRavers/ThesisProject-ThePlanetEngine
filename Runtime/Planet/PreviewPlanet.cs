@@ -9,9 +9,8 @@ namespace PlanetEngine
     public class PreviewPlanet : MonoBehaviour
     {
         #region Properties
-        public PlanetData Data = new PlanetData(0);
-
-        public bool PreviewSettings = false;
+        public PlanetData Data = null;
+        public bool PreviewSettings = true;
         public PreviewPhase Phase = PreviewPhase.BASICS;
         #endregion
 
@@ -21,6 +20,8 @@ namespace PlanetEngine
         #region Events
         void Start()
         {
+            Data = ScriptableObject.CreateInstance<PlanetData>();
+            Data.Init(100);
             Regenerate();
         }
         #endregion
@@ -40,8 +41,8 @@ namespace PlanetEngine
         }
 
         void PreviewFullProcess() {
-            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GeneratePreviewMesh(Data, PreviewPhase.BASICS);
-            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(Data);
+            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GeneratePreviewMesh(Data, PreviewPhase.HEIGHTMAP);
+            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GeneratePreviewMaterial(Data, PreviewPhase.HEIGHTMAP);
         }
         #endregion
 

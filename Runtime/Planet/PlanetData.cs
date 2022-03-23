@@ -1,11 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace PlanetEngine
 {
-
-    public struct PlanetData
+    public class PlanetData : ScriptableObject
     {
         #region Procedural Properties
         public int Seed;
@@ -30,17 +28,15 @@ namespace PlanetEngine
         const bool defaultOcean_c = true;
         const int defaultMaxDepth_c = 12;
         const int defaultLODlevels_c = 3;
-        const Gradient2D defaultOceanGradient_c = null;
         #endregion
 
-        public PlanetData(
+        public void Init(
             int seed,
             float radius = defaultRadius_c,
             float continentscale = defaultContinentScale_c,
             bool ocean = defaultOcean_c,
             int maxDepth = defaultMaxDepth_c,
-            int lodSphereCount = defaultLODlevels_c,
-            Gradient2D oceangradient = defaultOceanGradient_c
+            int lodSphereCount = defaultLODlevels_c
             )
         {
             Seed = seed;
@@ -49,12 +45,12 @@ namespace PlanetEngine
             HasOcean = ocean;
             MaxDepth = maxDepth;
             LODSphereCount = lodSphereCount;
-            OceanGradient = oceangradient;
+            OceanGradient = CreateInstance<Gradient2D>();
         }
 
         public PlanetData Copy(bool deep = false)
         {
-            PlanetData copy = new PlanetData(0);
+            PlanetData copy = CreateInstance<PlanetData>();
             copy.Seed = Seed;
             copy.Radius = Radius;
             copy.ContinentScale = ContinentScale;
@@ -64,23 +60,5 @@ namespace PlanetEngine
             copy.OceanGradient = OceanGradient;
             return copy;
         }
-
-        public bool Equals(PlanetData obj)
-        {
-            return obj.Seed == Seed &&
-            obj.Radius == Radius &&
-            obj.ContinentScale == ContinentScale &&
-            obj.HasOcean == HasOcean &&
-            obj.MaxDepth == MaxDepth &&
-            obj.LODSphereCount == LODSphereCount &&
-            obj.OceanGradient == OceanGradient;
-        }
-
-        public static bool operator ==(PlanetData a, PlanetData b)
-        {
-            return a.Equals(b);
-        }
-
-        public static bool operator !=(PlanetData a, PlanetData b) { return !a.Equals(b); }
     }
 }

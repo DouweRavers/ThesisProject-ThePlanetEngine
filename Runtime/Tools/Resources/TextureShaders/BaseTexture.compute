@@ -1,5 +1,3 @@
-#include "../ShaderLib/noiseSimplex.cginc"
-
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateBaseTexture
 #pragma kernel GenerateSideBaseTexture
