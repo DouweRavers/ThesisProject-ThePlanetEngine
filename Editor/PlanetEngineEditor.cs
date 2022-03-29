@@ -5,8 +5,7 @@ using UnityEngine;
 
 /**********************************************************************
  * 
- *                      The planet engine editor
- *      
+ *                      The planet engine editor     
  * 
  **********************************************************************/
 namespace PlanetEngine {
@@ -18,6 +17,7 @@ namespace PlanetEngine {
 		{
 			CreateTag("PlanetEngine");
 			GameObject planet = new GameObject("Planet");
+			planet.tag = "PlanetEngine";
 			planet.AddComponent<PreviewPlanet>();
 			Selection.activeTransform = planet.transform;
 		}

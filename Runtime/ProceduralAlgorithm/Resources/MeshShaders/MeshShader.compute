@@ -127,4 +127,5 @@ float4x4 object_to_world;
 [numthreads(1,1,1)]
 void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
 {
+	
 }

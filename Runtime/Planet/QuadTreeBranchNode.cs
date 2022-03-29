@@ -124,7 +124,7 @@ namespace PlanetEngine {
 			curvedMesh = MeshTool.NormalizeAndAmplify(curvedMesh, planetData.Radius);
 			curvedMesh = MeshTool.SubdivideGPU(curvedMesh);
 			Mesh seaMesh = Instantiate(curvedMesh);
-			//curvedMesh = MeshTool.ApplyHeightmap(curvedMesh, planetData, transform.localToWorldMatrix);
+			curvedMesh = ProceduralAlgorithm.ApplyPlanetPropertiesOnBranchMesh(planetData, curvedMesh, transform.localToWorldMatrix);
 			curvedMesh.RecalculateBounds();
 			Vector3 localMeshCenter = curvedMesh.bounds.center;
 			curvedMesh = MeshTool.OffsetMesh(curvedMesh, -localMeshCenter);
@@ -143,10 +143,8 @@ namespace PlanetEngine {
 		}
 
 		void ApplyTexture(Texture2D texture) {
-			Material material = new Material(Shader.Find("Standard"));
 			PlanetData planetData = GetComponentInParent<Planet>().Data;
-			//material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture, planetData.Seed), planetData.ColorA, planetData.ColorB);
-            GetComponent<MeshRenderer>().material = material;
+			GetComponent<MeshRenderer>().material = ProceduralAlgorithm.GenerateBranchMaterial(planetData, _data.BaseTexture);
 		}
 
 		void CreateChildQuads() {

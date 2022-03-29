@@ -1,0 +1,35 @@
+#pragma enable_d3d11_debug_symbols
+#pragma kernel GenerateBiomeTexture
+
+// Procedural properties
+bool has_ocean;
+
+// Texture data
+uint height;
+uint width;
+
+// Input
+Texture2D<float> height_texture;
+Texture2D<float> heat_texture;
+Texture2D<float> humidity_texture;
+Texture2D<float4> gradient_ocean_texture;
+Texture2D<float4> gradient_biome_texture;
+
+// Output
+RWTexture2D<float4> biome_texture_out;
+
+[numthreads(1, 1, 1)]
+void GenerateBiomeTexture(uint3 id : SV_DispatchThreadID)
+{
+    float4 color;
+    if (has_ocean && height_texture[id.xy] < 0)
+    {
+        float heightValue = 1 + height_texture[id.xy];
+        color = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, heightValue * height)];
+    }
+    else
+    {
+        color = gradient_biome_texture[uint2(heat_texture[id.xy] * width, humidity_texture[id.xy] * height)];
+    }
+    biome_texture_out[id.xy] = color;
+}

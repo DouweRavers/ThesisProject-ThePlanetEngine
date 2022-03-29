@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
-    internal enum ShaderType { BASETEXTURE, GRADIENT, HEIGHTMAP, NONE }
+    internal enum ShaderType { BASETEXTURE, GRADIENT, HEIGHTMAP, CLIMATE, BIOME, NONE }
     internal class TextureRenderer : ScriptableObject
     {
         int _kernelId = -1;
@@ -18,13 +18,19 @@ namespace PlanetEngine
             switch (shaderType)
             {
                 case ShaderType.BASETEXTURE:
-                    _shader = Resources.Load<ComputeShader>("TextureShaders/BaseTexture");
+                    _shader = Resources.Load<ComputeShader>("TextureShaders/BaseTextures");
                     break;
                 case ShaderType.GRADIENT:
                     _shader = Resources.Load<ComputeShader>("TextureShaders/Gradient2D");
                     break;
                 case ShaderType.HEIGHTMAP:
                     _shader = Resources.Load<ComputeShader>("TextureShaders/HeightmapTextures");
+                    break;
+                case ShaderType.CLIMATE:
+                    _shader = Resources.Load<ComputeShader>("TextureShaders/ClimateTextures");
+                    break;
+                case ShaderType.BIOME:
+                    _shader = Resources.Load<ComputeShader>("TextureShaders/BiomeTextures");
                     break;
                 case ShaderType.NONE:
                     _shader = null;

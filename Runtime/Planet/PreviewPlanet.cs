@@ -1,7 +1,8 @@
+using System.IO;
 using UnityEngine;
 namespace PlanetEngine
 {
-    public enum PreviewPhase { BASICS, HEIGHTMAP, CLIMATE, BIOMES, VEGETATION }
+    public enum PreviewPhase { BASICS, HEIGHTMAP, CLIMATE, BIOMES, VEGETATION, NONE }
 
     [ExecuteInEditMode]
     [RequireComponent(typeof(MeshRenderer))]
@@ -21,7 +22,10 @@ namespace PlanetEngine
         void Start()
         {
             Data = ScriptableObject.CreateInstance<PlanetData>();
-            Data.Init(100);
+            if (File.Exists("Assets/PlanetEngineData/" + name + "-planetData.json"))
+            {
+                Data.LoadData(name);
+            }
             Regenerate();
         }
         #endregion
@@ -29,20 +33,32 @@ namespace PlanetEngine
         #region Public methods
         public void Regenerate()
         {
+            if (transform.childCount > 0) DestroyImmediate(transform.GetChild(0).gameObject);
             if (PreviewSettings) PreviewCurrentSettings();
             else PreviewFullProcess();
         }
         #endregion
 
         #region Private methods
-        void PreviewCurrentSettings() {
-            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GeneratePreviewMesh(Data, Phase);
-            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GeneratePreviewMaterial(Data, Phase);
+        void PreviewCurrentSettings()
+        {
+            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GenerateHeightenedSphereMesh(Data);
+            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(Data, Phase, textureSize:1024);
+            if (Data.HasAtmosphere)
+            {
+                GameObject Atmosphere = new GameObject("Atmosphere");
+                Atmosphere.tag = "PlanetEngine";
+                Atmosphere.transform.SetParent(transform);
+                Atmosphere.AddComponent<MeshFilter>().mesh = ProceduralAlgorithm.GenerateSphereMesh(Data.Radius * 1.1f);
+                Atmosphere.AddComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateAtmosphereMaterial(Data);
+                Atmosphere.hideFlags = HideFlags.HideInHierarchy;
+            }
         }
 
-        void PreviewFullProcess() {
-            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GeneratePreviewMesh(Data, PreviewPhase.HEIGHTMAP);
-            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GeneratePreviewMaterial(Data, PreviewPhase.HEIGHTMAP);
+        void PreviewFullProcess()
+        {
+            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GenerateHeightenedSphereMesh(Data);
+            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(Data, textureSize: 1024);
         }
         #endregion
 

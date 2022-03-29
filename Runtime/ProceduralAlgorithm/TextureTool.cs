@@ -12,7 +12,7 @@ namespace PlanetEngine
         {
             get
             {
-                ComputeShader baseTextureShader = Resources.Load<ComputeShader>("TextureShaders/BaseTexture");
+                ComputeShader baseTextureShader = Resources.Load<ComputeShader>("TextureShaders/BaseTextures");
                 if (baseTextureShader == null) Debug.LogWarning("No shader loaded");
                 return baseTextureShader;
             }

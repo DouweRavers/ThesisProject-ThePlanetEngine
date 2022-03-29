@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -13,22 +12,29 @@ namespace PlanetEngine
         PreviewPlanet planet;
         Dictionary<string, GUIStyle> styles;
         Texture2D oceanTexture = null;
-        Color oceanGradientColor = Color.blue;
+        Texture2D biomeTexture = null;
         bool changed = false;
+        static float lastUpdate = 0;
+
+        // move to data
+        Color oceanGradientColor = Color.blue;
         int selectedPoint = -1;
+
         // temp
         Mesh mesh;
         Color color;
-        static float lastUpdate = 0;
         #endregion
 
 
         public override void OnInspectorGUI()
         {
             ShowGenerationMenu();
+
             if (lastUpdate + 0.3f < Time.realtimeSinceStartup && changed)
             {
                 changed = false;
+                if (!AssetDatabase.IsValidFolder("Assets/PlanetEngineData")) AssetDatabase.CreateFolder("Assets", "PlanetEngineData");
+                planet.Data.SaveData(planet.name);
                 planet.Regenerate();
                 lastUpdate = Time.realtimeSinceStartup;
             }
@@ -76,11 +82,21 @@ namespace PlanetEngine
             style = new GUIStyle();
             style.margin = new RectOffset(20, 20, 20, 20);
             styles["OceanTexture"] = style;
-            if (planet.Data != null && oceanTexture == null)
+            if (planet.Data != null && planet.Data.OceanGradient != null && oceanTexture == null)
             {
-                oceanTexture = planet.Data.OceanGradient.GetTexture(256, 256);
-                styles["OceanTexture"].normal.background = oceanTexture;
+                GenerateOceanGradientTexture();
+                changed = false;
             }
+
+            style = new GUIStyle();
+            style.margin = new RectOffset(20, 20, 20, 20);
+            styles["BiomeTexture"] = style;
+            if (planet.Data != null && planet.Data.biomeGradient != null && biomeTexture == null)
+            {
+                GenerateBiomeGradientTexture();
+                changed = false;
+            }
+
         }
 
         void ShowGenerationMenu()
@@ -144,6 +160,7 @@ namespace PlanetEngine
                 if (GUILayout.Button(Resources.Load<Texture2D>("UI/RandomIcon"), GUILayout.Height(25f), GUILayout.Width(25f)))
                 {
                     changed = true;
+                    RandomizeProperties(PreviewPhase.NONE);
                 }
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button(Resources.Load<Texture2D>("UI/LeftArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
@@ -154,7 +171,13 @@ namespace PlanetEngine
                 }
                 if (GUILayout.Button(Resources.Load<Texture2D>(planet.Phase == PreviewPhase.VEGETATION ? "UI/Add" : "UI/RightArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
                 {
-                    if (planet.Phase == PreviewPhase.VEGETATION) return;
+                    if (planet.Phase == PreviewPhase.VEGETATION) {
+                        PlanetData data = planet.Data;
+                        GameObject generatedPlanetObject = new GameObject(planet.name);
+                        generatedPlanetObject.tag = "PlanetEngine";
+                        generatedPlanetObject.AddComponent<Planet>().CreateNewPlanet(data);
+                        generatedPlanetObject.transform.parent = planet.transform.parent;
+                    }
                     planet.Phase++;
                     changed = true;
                 }
@@ -190,17 +213,7 @@ namespace PlanetEngine
                 oldLOD != planet.Data.LODSphereCount ||
                 oldDepth != planet.Data.MaxDepth) changed = true;
 
-
-            ShowPanelFooter(RandomizeCelestialProperties);
-
-            int RandomizeCelestialProperties()
-            {
-                UnityEngine.Random.InitState(Time.frameCount);
-                planet.Data.Radius = UnityEngine.Random.Range(1f, 100f);
-                planet.Data.LODSphereCount = UnityEngine.Random.Range(2, 5);
-                planet.Data.MaxDepth = UnityEngine.Random.Range(2, 13);
-                return 1;
-            }
+            ShowPanelFooter(PreviewPhase.BASICS);
         }
 
         void ShowHeightMapMenu()
@@ -219,113 +232,104 @@ namespace PlanetEngine
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Continent size");
-            planet.Data.ContinentScale = EditorGUILayout.Slider(planet.Data.ContinentScale, 0.5f, 10f);
+            planet.Data.ContinentScale = EditorGUILayout.Slider(planet.Data.ContinentScale, 0.1f, 5f);
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Oceans");
             planet.Data.HasOcean = EditorGUILayout.Toggle(planet.Data.HasOcean);
             GUILayout.EndHorizontal();
-            if (planet.Data.HasOcean) ShowGradient();
+            if (planet.Data.HasOcean) ShowOceanGradient();
 
             if (seed != planet.Data.Seed ||
                 scale != planet.Data.ContinentScale ||
                 ocean != planet.Data.HasOcean) changed = true;
 
-            ShowPanelFooter(RandomizeHeightMapProperties);
-
-            int RandomizeHeightMapProperties()
-            {
-                UnityEngine.Random.InitState(Time.frameCount);
-                planet.Data.Seed = UnityEngine.Random.Range(1, 1000);
-                planet.Data.ContinentScale = UnityEngine.Random.Range(0.5f, 10f);
-                planet.Data.HasOcean = UnityEngine.Random.Range(0, 2) == 0;
-                planet.Data.OceanGradient = ScriptableObject.CreateInstance<Gradient2D>();
-                List<GradientPoint> points = new List<GradientPoint>();
-                for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
-                {
-                    Color randColor = UnityEngine.Random.ColorHSV(0, 1, 0, 1, 0, 1, 1, 1);
-                    Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
-                    float randWeight = UnityEngine.Random.Range(0, 5f);
-                    points.Add(new GradientPoint(randColor, randVec, randWeight));
-                }
-                planet.Data.OceanGradient.Points = points;
-                return 1;
-            }
-
-
+            ShowPanelFooter(PreviewPhase.HEIGHTMAP);
         }
 
         void ShowClimateMenu()
         {
             ShowPanelHeader("Climate - " + planet.name);
 
+            float solarHeat = planet.Data.SolarHeat;
+            float heightCooling = planet.Data.HeightCooling;
+            float humidity = planet.Data.HumidityTransfer;
+            bool atmosphere = planet.Data.HasAtmosphere;
+            Color atmosphereColor = planet.Data.AtmosphereColor;
+            bool clouds = planet.Data.HasClouds;
+            float cloudsdensity = planet.Data.CloudDensity;
+            int cloudgradient = planet.Data.CloudGradient.GetHashCode();
+
             GUILayout.BeginHorizontal();
             GUILayout.Label("Solar heat");
-            EditorGUILayout.Slider(0.5f, 0f, 1f);
+            planet.Data.SolarHeat = EditorGUILayout.Slider(planet.Data.SolarHeat, 0f, 1f);
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Atmosphere");
-            EditorGUILayout.Toggle(false);
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Green house effect");
-            EditorGUILayout.Slider(0.5f, 0f, 1f);
+            GUILayout.Label("Height cooling");
+            planet.Data.HeightCooling = EditorGUILayout.Slider(planet.Data.HeightCooling, 0f, 1f);
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Humidity transfer");
-            EditorGUILayout.Slider(0.5f, 0f, 1f);
+            planet.Data.HumidityTransfer = EditorGUILayout.Slider(planet.Data.HumidityTransfer, 0f, 1f);
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Cloud color");
-            EditorGUILayout.GradientField(new Gradient());
+            GUILayout.Label("Atmosphere");
+            planet.Data.HasAtmosphere = EditorGUILayout.Toggle(planet.Data.HasAtmosphere);
             GUILayout.EndHorizontal();
 
-            ShowPanelFooter();
+            if (planet.Data.HasAtmosphere)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Atmosphere color");
+                planet.Data.AtmosphereColor = EditorGUILayout.ColorField(planet.Data.AtmosphereColor);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Clouds");
+                planet.Data.HasClouds = EditorGUILayout.Toggle(planet.Data.HasClouds);
+                GUILayout.EndHorizontal();
+                if (planet.Data.HasClouds)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Clouds density");
+                    planet.Data.CloudDensity = EditorGUILayout.Slider(planet.Data.CloudDensity, 0f, 1f);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Clouds Gradient");
+                    planet.Data.CloudGradient = EditorGUILayout.GradientField(planet.Data.CloudGradient);
+                    GUILayout.EndHorizontal();
+                }
+            }
+
+            if (solarHeat != planet.Data.SolarHeat ||
+                heightCooling != planet.Data.HeightCooling ||
+                humidity != planet.Data.HumidityTransfer ||
+                atmosphere != planet.Data.HasAtmosphere ||
+                atmosphereColor != planet.Data.AtmosphereColor ||
+                clouds != planet.Data.HasClouds ||
+                cloudsdensity != planet.Data.CloudDensity ||
+                cloudgradient != planet.Data.CloudGradient.GetHashCode())
+            {
+                if (solarHeat != planet.Data.SolarHeat || heightCooling != planet.Data.HeightCooling) planet.Data.previewHeat = true;
+                if (humidity != planet.Data.HumidityTransfer) planet.Data.previewHeat = false;
+                changed = true;
+            }
+
+            ShowPanelFooter(PreviewPhase.CLIMATE);
         }
 
         void ShowBiomesMenu()
         {
             ShowPanelHeader("Biomes - " + planet.name);
 
-            if (GUILayout.Button("Biome"))
-            {
-                PopupWindow.Show(new Rect(50, 50, 50, 50), new PopupExample());
-            }
-            color = EditorGUILayout.ColorField(color);
-            /*
-             * texture2D = (Texture2D)EditorGUILayout.ObjectField("terrain texture", texture2D, typeof(Texture2D), false);
-            texture2D = (Texture2D)EditorGUILayout.ObjectField("heightmap texture", texture2D, typeof(Texture2D), false);
-            float a = 0.1f, b = 0.5f;
-            EditorGUILayout.MinMaxSlider("Height:", ref a, ref b, 0f, 1f);
-            
-            showGradient = EditorGUILayout.Foldout(showGradient, "graph");
-            if (showGradient)
-            {
-                color = EditorGUILayout.ColorField(color);
-                GUILayout.Label("", styles["texture"], GUILayout.Width(texture2D.width * 3), GUILayout.Height(texture2D.height * 3));
-                Rect textureRect = GUILayoutUtility.GetLastRect();
-                Event e = Event.current;
-                if (e.type == EventType.MouseDown && textureRect.x < e.mousePosition.x && e.mousePosition.x < textureRect.x + textureRect.width &&
-                    textureRect.y < e.mousePosition.y && e.mousePosition.y < textureRect.y + textureRect.height)
-                {
-                    int x = (int)(e.mousePosition.x - textureRect.x) / 3;
-                    int y = (int)(textureRect.y + textureRect.width - e.mousePosition.y) / 3;
-                    texture2D.SetPixel(x, y, color);
-                    texture2D.SetPixel(x + 1, y, color);
-                    texture2D.SetPixel(x - 1, y, color);
-                    texture2D.SetPixel(x, y + 1, color);
-                    texture2D.SetPixel(x, y - 1, color);
-                    texture2D.Apply();
-                    GUI.changed = true;
-                }
-            }*/
+            ShowBiomeGradient();
 
-            ShowPanelFooter();
+            ShowPanelFooter(PreviewPhase.BIOMES);
         }
 
         void ShowVegetationMenu()
@@ -338,11 +342,9 @@ namespace PlanetEngine
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("vegetation"))
             {
-                PopupWindow.Show(new Rect(50, 50, 50, 50), new PopupExample());
             }
             if (GUILayout.Button("type"))
             {
-                PopupWindow.Show(new Rect(50, 50, 50, 50), new PopupExample());
             }
             GUILayout.EndHorizontal();
 
@@ -378,11 +380,9 @@ namespace PlanetEngine
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("vegetation"))
             {
-                PopupWindow.Show(new Rect(50, 50, 50, 50), new PopupExample());
             }
             if (GUILayout.Button("type"))
             {
-                PopupWindow.Show(new Rect(50, 50, 50, 50), new PopupExample());
             }
             GUILayout.EndHorizontal();
 
@@ -432,12 +432,7 @@ namespace PlanetEngine
             GUILayout.Box(Texture2D.whiteTexture, GUILayout.ExpandWidth(true), GUILayout.Height(3));
         }
 
-        void ShowPanelFooter()
-        {
-            ShowPanelFooter(() => { return 0; });
-        }
-
-        void ShowPanelFooter(Func<int> randomize)
+        void ShowPanelFooter(PreviewPhase phase = PreviewPhase.NONE)
         {
             GUILayout.FlexibleSpace();
 
@@ -456,14 +451,14 @@ namespace PlanetEngine
             GUILayout.Label("Randomize settings");
             if (GUILayout.Button(Resources.Load<Texture2D>("UI/RandomIcon"), GUILayout.Height(25f), GUILayout.Width(25f)))
             {
-                randomize.Invoke();
+                RandomizeProperties(phase);
                 changed = true;
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 
-        void ShowGradient()
+        void ShowOceanGradient()
         {
             if (oceanTexture == null) GenerateOceanGradientTexture();
             GUILayout.BeginHorizontal();
@@ -475,6 +470,7 @@ namespace PlanetEngine
             {
                 // Check for change values
                 float smooth = planet.Data.OceanGradient.Smooth;
+                float refleciveness = planet.Data.OceanReflectiveness;
 
                 GUILayout.BeginVertical();
                 // Title
@@ -493,7 +489,10 @@ namespace PlanetEngine
                 // Smoothing Menu
                 GUILayout.Label("Gradient smoothing");
                 planet.Data.OceanGradient.Smooth = GUILayout.HorizontalSlider(planet.Data.OceanGradient.Smooth, 0.1f, 10f, GUILayout.Height(20));
-                if (planet.Data.OceanGradient.Smooth != smooth) GenerateOceanGradientTexture();
+                GUILayout.Label("Reflection");
+                planet.Data.OceanReflectiveness = GUILayout.HorizontalSlider(planet.Data.OceanReflectiveness, 0.5f, 1f, GUILayout.Height(20));
+
+                if (planet.Data.OceanGradient.Smooth != smooth || planet.Data.OceanReflectiveness != refleciveness) GenerateOceanGradientTexture();
 
                 // Color points on graph
                 for (int i = 0; i < planet.Data.OceanGradient.Points.Count; i++)
@@ -543,8 +542,7 @@ namespace PlanetEngine
                     {
                         planet.Data.OceanGradient.Points.RemoveAt(selectedPoint);
                         selectedPoint = -1;
-                        oceanTexture = planet.Data.OceanGradient.GetTexture(256, 256);
-                        styles["OceanTexture"].normal.background = oceanTexture;
+                        GenerateOceanGradientTexture();
                     }
                     else
                     {
@@ -554,8 +552,8 @@ namespace PlanetEngine
                             prevPoint.Position != point.Position ||
                             prevPoint.Weight != point.Weight)
                         {
-                            oceanTexture = planet.Data.OceanGradient.GetTexture(256, 256);
-                            styles["OceanTexture"].normal.background = oceanTexture;
+                            GenerateOceanGradientTexture();
+                            changed = false;
                         }
                     }
                 }
@@ -618,36 +616,234 @@ namespace PlanetEngine
         {
             oceanTexture = planet.Data.OceanGradient.GetTexture(256, 256);
             styles["OceanTexture"].normal.background = oceanTexture;
-        }
-    }
-
-    public class PopupExample : PopupWindowContent
-    {
-        bool toggle1 = true;
-        bool toggle2 = true;
-        bool toggle3 = true;
-
-        public override Vector2 GetWindowSize()
-        {
-            return new Vector2(200, 150);
+            changed = true;
         }
 
-        public override void OnGUI(Rect textureRect)
+        void ShowBiomeGradient()
         {
-            GUILayout.Label("Popup Options Example", EditorStyles.boldLabel);
-            toggle1 = EditorGUILayout.Toggle("Toggle 1", toggle1);
-            toggle2 = EditorGUILayout.Toggle("Toggle 2", toggle2);
-            toggle3 = EditorGUILayout.Toggle("Toggle 3", toggle3);
+            if (oceanTexture == null) GenerateOceanGradientTexture();
+            GUILayout.BeginHorizontal();
+            Rect textureRect = ShowGradientField();
+            Rect pointMenuRect = ShowPointProperties();
+            HandleMouseInput(textureRect, pointMenuRect);
+
+            Rect ShowGradientField()
+            {
+                // Check for change values
+                float smooth = planet.Data.biomeGradient.Smooth;
+
+                GUILayout.BeginVertical();
+                // Title
+                GUILayout.Label("Biome gradient");
+                GUILayout.Space(10);
+
+                // Graph
+                GUILayout.Label("Humidity");
+                GUILayout.Label("", styles["BiomeTexture"], GUILayout.MinWidth(150), GUILayout.MinHeight(100));
+                Rect textureRect = GUILayoutUtility.GetLastRect();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("Temperature");
+                GUILayout.EndHorizontal();
+
+                // Smoothing Menu
+                GUILayout.Label("Gradient smoothing");
+                planet.Data.biomeGradient.Smooth = GUILayout.HorizontalSlider(planet.Data.biomeGradient.Smooth, 0.1f, 10f, GUILayout.Height(20));
+                if (planet.Data.biomeGradient.Smooth != smooth ) GenerateBiomeGradientTexture();
+
+                // Color points on graph
+                for (int i = 0; i < planet.Data.biomeGradient.Points.Count; i++)
+                {
+                    GradientPoint point = planet.Data.biomeGradient.Points[i];
+                    int size = i == selectedPoint ? 30 : 20;
+                    GUI.backgroundColor = Color.Lerp(point.Color, Color.white, 0.2f);
+                    if (GUI.Button(new Rect(
+                        textureRect.x + textureRect.width * point.Position.x - size / 2,
+                        textureRect.y + textureRect.height * (1 - point.Position.y) - size / 2,
+                        size, size), "", styles["IndicatorFinished"]))
+                    {
+                        selectedPoint = i;
+                        oceanGradientColor = point.Color;
+                    }
+                }
+                GUI.backgroundColor = Color.white;
+                GUILayout.EndVertical();
+
+                return textureRect;
+            }
+
+            Rect ShowPointProperties()
+            {
+                GUILayout.BeginVertical(GUILayout.MaxWidth(100), GUILayout.ExpandHeight(true));
+
+                // Title
+                GUILayout.Label("Point menu");
+                GUILayout.Space(10);
+
+                // Menu
+                if (0 <= selectedPoint)
+                {
+                    // Check for change values
+                    GradientPoint point = planet.Data.biomeGradient.Points[selectedPoint];
+                    GradientPoint prevPoint = new GradientPoint(point.Color, point.Position, point.Weight);
+
+                    // Gradient point properties
+                    GUILayout.Label("Color:");
+                    oceanGradientColor = EditorGUILayout.ColorField(oceanGradientColor);
+                    point.Color = oceanGradientColor;
+                    GUILayout.Label("Weight:");
+                    point.Weight = GUILayout.HorizontalSlider(point.Weight, 0, 5, GUILayout.Height(20));
+
+                    // Remove selected point
+                    if (GUILayout.Button("-", GUILayout.Width(50)))
+                    {
+                        planet.Data.biomeGradient.Points.RemoveAt(selectedPoint);
+                        selectedPoint = -1;
+                        GenerateBiomeGradientTexture();
+                    }
+                    else
+                    {
+                        // If not removed check for changes and apply new properties
+                        planet.Data.biomeGradient.Points[selectedPoint] = point;
+                        if (prevPoint.Color != point.Color ||
+                            prevPoint.Position != point.Position ||
+                            prevPoint.Weight != point.Weight)
+                        {
+                            GenerateBiomeGradientTexture();
+                            changed = false;
+                        }
+
+                    }
+                }
+                else
+                {
+                    GUILayout.Label("Click to add a point.");
+                }
+                GUILayout.EndVertical();
+                Rect pointMenuRect = GUILayoutUtility.GetLastRect();
+                GUILayout.EndHorizontal();
+
+                return pointMenuRect;
+            }
+
+            void HandleMouseInput(Rect textureRect, Rect pointMenuRect)
+            {
+                // Catch events
+                Event e = Event.current;
+                if (e.type == EventType.MouseDown)
+                {
+                    // Check if mouse press is over the gradient graph area
+                    if (textureRect.x < e.mousePosition.x && e.mousePosition.x < textureRect.x + textureRect.width &&
+                    textureRect.y < e.mousePosition.y && e.mousePosition.y < textureRect.y + textureRect.height)
+                    {
+                        Vector2 positionNormalized = new Vector2((e.mousePosition.x - textureRect.x) / textureRect.width, (textureRect.y + textureRect.height - e.mousePosition.y) / textureRect.height);
+                        // If point was previously selected apply new position
+                        if (0 <= selectedPoint)
+                        {
+                            GradientPoint point = planet.Data.biomeGradient.Points[selectedPoint];
+                            oceanGradientColor = point.Color;
+                            point.Position = positionNormalized;
+                            planet.Data.biomeGradient.Points[selectedPoint] = point;
+                        }
+                        // No point selected means adding new point
+                        else
+                        {
+                            planet.Data.biomeGradient.Points.Add(new GradientPoint(oceanGradientColor, positionNormalized, 1f));
+                            selectedPoint = planet.Data.biomeGradient.Points.Count - 1;
+                        }
+                        GenerateBiomeGradientTexture();
+                        GUI.changed = true;
+                    }
+                    // Check if mouse is over point menu
+                    else if (pointMenuRect.x < e.mousePosition.x && e.mousePosition.x < pointMenuRect.x + pointMenuRect.width &&
+                  pointMenuRect.y < e.mousePosition.y && e.mousePosition.y < pointMenuRect.y + pointMenuRect.height)
+                    {
+                        // Do not unselect points when adjusting point properties
+                    }
+                    // When mousepress is not on focus area
+                    else
+                    {
+                        selectedPoint = -1;
+                        GUI.changed = true;
+                    }
+                }
+            }
         }
 
-        public override void OnOpen()
+        void GenerateBiomeGradientTexture()
         {
-            Debug.Log("Popup opened: " + this);
+            biomeTexture = planet.Data.biomeGradient.GetTexture(256, 256);
+            styles["BiomeTexture"].normal.background = biomeTexture;
+            changed = true;
         }
 
-        public override void OnClose()
+        void RandomizeProperties(PreviewPhase phase)
         {
-            Debug.Log("Popup closed: " + this);
+            UnityEngine.Random.InitState(Time.frameCount);
+            if (phase == PreviewPhase.BASICS) RandomizeCelestialProperties();
+            else if (phase == PreviewPhase.HEIGHTMAP) RandomizeHeightMapProperties();
+            else if (phase == PreviewPhase.CLIMATE) RandomizeClimateProperties();
+            else if (phase == PreviewPhase.BIOMES) RandomizeBiomeProperties();
+            else
+            {
+                RandomizeCelestialProperties();
+                RandomizeHeightMapProperties();
+                RandomizeClimateProperties();
+                RandomizeBiomeProperties();
+            }
+
+            void RandomizeCelestialProperties()
+            {
+                planet.Data.Radius = UnityEngine.Random.Range(1f, 100f);
+                planet.Data.LODSphereCount = UnityEngine.Random.Range(2, 5);
+                planet.Data.MaxDepth = UnityEngine.Random.Range(2, 13);
+            }
+
+            void RandomizeHeightMapProperties()
+            {
+                planet.Data.Seed = UnityEngine.Random.Range(1, 1000);
+                planet.Data.ContinentScale = UnityEngine.Random.Range(0.1f, 5f);
+                planet.Data.HasOcean = UnityEngine.Random.Range(0, 2) == 0;
+                planet.Data.OceanGradient = CreateInstance<Gradient2D>();
+                List<GradientPoint> points = new List<GradientPoint>();
+                for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
+                {
+                    Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.8f, 1, 0.8f, 1f, 1f, 1f);
+                    Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
+                    float randWeight = UnityEngine.Random.Range(0, 5f);
+                    points.Add(new GradientPoint(randColor, randVec, randWeight));
+                }
+                planet.Data.OceanGradient.Points = points;
+                planet.Data.OceanGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
+                planet.Data.OceanReflectiveness = UnityEngine.Random.Range(0.5f, 1f);
+            }
+
+            void RandomizeClimateProperties()
+            {
+                planet.Data.SolarHeat = UnityEngine.Random.Range(0f, 1f);
+                planet.Data.HeightCooling = UnityEngine.Random.Range(0f, 1f);
+                planet.Data.HumidityTransfer = UnityEngine.Random.Range(0f, 1f);
+                planet.Data.HasAtmosphere = UnityEngine.Random.Range(0,2) == 0;
+                planet.Data.AtmosphereColor = UnityEngine.Random.ColorHSV(0f,1f, 0f, 1f, 0f, 1f, 0f, 0.2f);
+                planet.Data.HasClouds = UnityEngine.Random.Range(0, 2) == 0;
+                planet.Data.CloudDensity = UnityEngine.Random.Range(0f, 1f);
+            }
+
+            void RandomizeBiomeProperties()
+            {
+                planet.Data.biomeGradient = CreateInstance<Gradient2D>();
+                List<GradientPoint> points = new List<GradientPoint>();
+                for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
+                {
+                    Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1, 0f, 1f, 1f, 1f);
+                    Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
+                    float randWeight = UnityEngine.Random.Range(0, 5f);
+                    points.Add(new GradientPoint(randColor, randVec, randWeight));
+                }
+                planet.Data.biomeGradient.Points = points;
+                planet.Data.biomeGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
+            }
+
         }
     }
 }

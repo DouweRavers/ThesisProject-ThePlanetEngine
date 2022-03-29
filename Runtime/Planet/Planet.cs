@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 namespace PlanetEngine
 {
@@ -7,13 +8,17 @@ namespace PlanetEngine
     {
 
         #region Properties
-        public PlanetData Data { get { return _data; } set { _data = value; } }
-        PlanetData _data = new PlanetData();
+        public PlanetData Data;
         #endregion
 
         #region Events
         void Start()
         {
+            Data = ScriptableObject.CreateInstance<PlanetData>();
+            if (File.Exists("Assets/PlanetEngineData/" + name + "-planetData.json"))
+            {
+                Data.LoadData(name);
+            }
             CreateNewPlanet();
         }
         #endregion
@@ -25,19 +30,20 @@ namespace PlanetEngine
             int childCount = transform.childCount;
             for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
 
-            if (_data.Seed == 0) _data = new PlanetData();
+            if (Data == null) Data = ScriptableObject.CreateInstance<PlanetData>();
             CreatePlanetFromData();
         }
 
         public void CreateNewPlanet(int seed)
         {
-            _data = new PlanetData();
+            Data = ScriptableObject.CreateInstance<PlanetData>();
+            Data.Seed = seed;
             CreateNewPlanet();
         }
 
         public void CreateNewPlanet(PlanetData data)
         {
-            _data = data;
+            Data = data;
             CreateNewPlanet();
         }
         #endregion
@@ -54,12 +60,12 @@ namespace PlanetEngine
 
         void CreateSingleMeshObjects(List<Transform> LODlist)
         {
-            for (int i = 0; i < _data.LODSphereCount; i++)
+            for (int i = 0; i < Data.LODSphereCount; i++)
             {
                 GameObject singleMeshObject = new GameObject(gameObject.name + " - LODSphere: " + i);
                 singleMeshObject.tag = "PlanetEngine";
                 singleMeshObject.transform.SetParent(transform);
-                singleMeshObject.AddComponent<SingleMeshNode>().CreateMesh(2 * i + 1, 256 * (int)Mathf.Pow(2, i), _data);
+                singleMeshObject.AddComponent<SingleMeshNode>().Create(2 * i + 1, 256 * (int)Mathf.Pow(2, i), Data);
                 LODlist.Add(singleMeshObject.transform);
             }
         }

@@ -1,0 +1,106 @@
+#include "../ShaderLib/noiseSimplex.cginc"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel GenerateHeightmapTexture
+#pragma kernel GenerateHeightBaseTexture
+#pragma kernel GenerateNormalTexture
+#pragma kernel GenerateHeightmapColorTexture
+#pragma kernel GenerateHeightmapReflectiveTexture
+
+// Procedural data
+uint seed;
+bool has_ocean;
+float continent_scale;
+float reflectiveness;
+float solar_heat;
+float height_cooling;
+
+// Texture data
+uint height;
+uint width;
+
+// Input
+Texture2D<float4> base_texture;
+Texture2D<float> height_texture;
+Texture2D<float4> gradient_texture;
+
+// Output
+RWTexture2D<float> height_texture_out;
+RWTexture2D<float4> height_base_texture_out;
+RWTexture2D<float4> color_texture_out;
+RWTexture2D<float4> reflective_texture_out;
+RWTexture2D<float4> normal_texture_out;
+
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapTexture(uint3 id : SV_DispatchThreadID)
+{
+    float height_value = 0;
+    float divider = 0;
+    for (float i = 1; i < 10; i++)
+    {
+        height_value += snoise(continent_scale * i * base_texture[id.xy].xyz + seed) / i;
+        divider += 1 / i;
+    }
+    height_texture_out[id.xy] = height_value / divider;
+}
+
+[numthreads(1, 1, 1)]
+void GenerateHeightBaseTexture(uint3 id : SV_DispatchThreadID)
+{
+    if (has_ocean && height_texture[id.xy] < 0)
+        height_base_texture_out[id.xy] = base_texture[id.xy];
+    else
+        height_base_texture_out[id.xy] = float4(base_texture[id.xy].xyz * (1 + 0.1 * height_texture[id.xy]), 1);
+}
+
+[numthreads(1, 1, 1)]
+void GenerateNormalTexture(uint3 id : SV_DispatchThreadID)
+{
+    float heightCenter = height_texture[id.xy];
+    float heightUp = height_texture[id.xy + uint2(0, 1)];
+    float heightDown = height_texture[id.xy + uint2(0, -1)];
+    float heightLeft = height_texture[id.xy + uint2(-1, 0)];
+    float heightRight = height_texture[id.xy + uint2(1, 0)];
+    float DeltaX = ((heightLeft - heightRight) ) * 0.5;
+    float DeltaY = ((heightUp - heightDown) ) * 0.5;
+    float4 norm;
+    if (heightCenter <= 0)
+        norm = float4(0, 0, 1, height_texture[id.xy]);
+    else
+        norm = float4(DeltaX, DeltaY, 1, height_texture[id.xy]);
+    normal_texture_out[id.xy] = norm;
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    float locational_heat = 1 - abs(base_texture[id.xy].y);
+    float altitude_heat = clamp(1 - height_texture[id.xy], 0, 1);
+    float heat = pow(locational_heat, 2 * (1 - solar_heat)) * pow(altitude_heat, height_cooling);
+    float depth = clamp(1 + height_texture[id.xy], 0, 1);
+    float4 color = gradient_texture[uint2(heat * width, depth * height)];
+    if (height_texture[id.xy] < 0 && has_ocean)
+    {
+        color_texture_out[id.xy] = color;
+    }
+    else
+    {
+        color_texture_out[id.xy] = 1;
+    }
+    
+}
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapReflectiveTexture(uint3 id : SV_DispatchThreadID)
+{
+    if (height_texture[id.xy] > 0)
+    {
+        reflective_texture_out[id.xy] = 0;
+    }
+    else
+    {
+        reflective_texture_out[id.xy] = reflectiveness;
+    }
+}

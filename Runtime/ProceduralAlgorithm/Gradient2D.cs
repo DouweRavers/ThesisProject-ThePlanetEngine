@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace PlanetEngine
 {
+    [Serializable]
     public struct GradientPoint
     {
         public Color Color;
@@ -11,17 +13,18 @@ namespace PlanetEngine
 
         public GradientPoint(Color color, Vector2 position, float weight)
         {
-            this.Color = color;
-            this.Position = position;
-            this.Weight = weight;
+            Color = color;
+            Position = position;
+            Weight = weight;
         }
     }
 
 
+    [Serializable]
     public class Gradient2D : ScriptableObject
     {
         public float Smooth = 1f;
-        public List<GradientPoint> Points = new List<GradientPoint>();
+        public List<GradientPoint> Points;
 
         public Texture2D GetTexture(int width, int height)
         {
@@ -39,11 +42,12 @@ namespace PlanetEngine
             return renderer.GetOutputTexture();
         }
 
-        public void GetPointData(out Color[] colors, out Vector2[] positions, out float[] weights) {
+        public void GetPointData(out Color[] colors, out Vector2[] positions, out float[] weights)
+        {
             colors = new Color[Points.Count];
             positions = new Vector2[Points.Count];
             weights = new float[Points.Count];
-            
+
             for (int i = 0; i < Points.Count; i++)
             {
                 colors[i] = Points[i].Color;
@@ -51,6 +55,12 @@ namespace PlanetEngine
                 weights[i] = Points[i].Weight;
             }
         }
-       
+
+        void Awake()
+        {
+            Points = new List<GradientPoint>();
+            Points.Add(new GradientPoint(Color.black, Vector2.one * 0.5f, 1f));
+        }
+
     }
 }
