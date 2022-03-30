@@ -1,0 +1,29 @@
+#pragma enable_d3d11_debug_symbols
+#pragma kernel GenerateHeightmapReflectiveTexture
+
+
+// Procedural data
+float reflectiveness;
+
+// Texture data
+uint height;
+uint width;
+
+// Input
+Texture2D<float> height_texture;
+
+// Output
+RWTexture2D<float4> reflective_texture_out;
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapReflectiveTexture(uint3 id : SV_DispatchThreadID)
+{
+    if (height_texture[id.xy] > 0)
+    {
+        reflective_texture_out[id.xy] = 0;
+    }
+    else
+    {
+        reflective_texture_out[id.xy] = reflectiveness;
+    }
+}

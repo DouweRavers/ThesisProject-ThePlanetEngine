@@ -9,7 +9,6 @@ namespace PlanetEngine
             // Material and textures
             Material material = new Material(Shader.Find("Standard"));
             Texture2D colorTexture = null;
-            Texture2D normalTexture = null;
             Texture2D specularTexture = null;
 
 
@@ -23,8 +22,6 @@ namespace PlanetEngine
 
             // Generate heights
             Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, data);
-            //Texture2D heighBaseTexture = ProceduralTexture.GetHeightBaseTexture(baseTexture, baseTexture, data);
-            normalTexture = ProceduralTexture.GetNormalTexture(heightTexture);
             if (data.HasOcean) specularTexture = ProceduralTexture.GetOceanReflectiveTexture(heightTexture, data);
             if (phase == PreviewPhase.HEIGHTMAP)
             {
@@ -38,8 +35,8 @@ namespace PlanetEngine
 
             if (phase == PreviewPhase.CLIMATE)
             {
-                Texture2D dataTexture = data.previewHeat ? heatmapTexture : humidityTexture;
-                colorTexture = ProceduralTexture.GetHeatHumidityTextureColored(dataTexture, data.previewHeat);
+                if(data.previewHeat) colorTexture = ProceduralTexture.GetHeatTextureColored(heatmapTexture);
+                else colorTexture = ProceduralTexture.GetHumidityTextureColored(humidityTexture);
                 specularTexture = null;
                 goto ReturnMaterial;
             }
@@ -53,8 +50,6 @@ namespace PlanetEngine
         ReturnMaterial:
 
             material.SetTexture("_MainTex", colorTexture);
-            //if (normalTexture != null) material.EnableKeyword("_BUMPMAP");
-            // material.SetTexture("_BumpMap", normalTexture);
             if (specularTexture != null) material.EnableKeyword("_METALLICGLOSSMAP");
             material.SetTexture("_MetallicGlossMap", specularTexture);
             return material;
@@ -65,15 +60,12 @@ namespace PlanetEngine
             // Material and textures
             Material material = new Material(Shader.Find("Standard"));
             Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, data);
-            Texture2D normalTexture = ProceduralTexture.GetNormalTexture(heightTexture);
             Texture2D specularTexture = null;
             if (data.HasOcean) specularTexture = ProceduralTexture.GetOceanReflectiveTexture(heightTexture, data);
             Texture2D heatmapTexture = ProceduralTexture.GetHeatTexture(baseTexture, heightTexture, data);
             Texture2D humidityTexture = ProceduralTexture.GetHumidityTexture(heightTexture, data);
             Texture2D colorTexture = ProceduralTexture.GetBiomeTexture(heightTexture, heatmapTexture, humidityTexture, data);
             material.SetTexture("_MainTex", colorTexture);
-            //if (normalTexture != null) material.EnableKeyword("_BUMPMAP");
-            // material.SetTexture("_BumpMap", normalTexture);
             if (specularTexture != null) material.EnableKeyword("_METALLICGLOSSMAP");
             material.SetTexture("_MetallicGlossMap", specularTexture);
             return material;

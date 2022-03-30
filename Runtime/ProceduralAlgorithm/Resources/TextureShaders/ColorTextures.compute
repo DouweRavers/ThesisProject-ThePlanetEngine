@@ -1,0 +1,88 @@
+#pragma enable_d3d11_debug_symbols
+#pragma kernel GenerateHeightmapColorTexture
+#pragma kernel GenerateHeatmapColorTexture
+#pragma kernel GenerateHumidityColorTexture
+#pragma kernel GenerateBiomeColorTexture
+
+// Procedural data
+bool has_ocean;
+float continent_scale;
+float reflectiveness;
+float solar_heat;
+float height_cooling;
+
+// Texture data
+uint height;
+uint width;
+
+// Input
+Texture2D<float4> base_texture;
+Texture2D<float> height_texture;
+Texture2D<float> heat_texture;
+Texture2D<float> humidity_texture;
+Texture2D<float4> gradient_ocean_texture;
+Texture2D<float4> gradient_biome_texture;
+
+// Output
+RWTexture2D<float4> color_texture_out;
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    float locational_heat = 1 - abs(base_texture[id.xy].y);
+    float altitude_heat = clamp(1 - height_texture[id.xy], 0, 1);
+    float heat = pow(locational_heat, 2 * (1 - solar_heat)) * pow(altitude_heat, height_cooling);
+    float depth = clamp(1 + height_texture[id.xy], 0, 1);
+    float4 color = gradient_ocean_texture[uint2(heat * width, depth * height)];
+    if (height_texture[id.xy] < 0 && has_ocean)
+    {
+        color_texture_out[id.xy] = color;
+    }
+    else
+    {
+        color_texture_out[id.xy] = (height_texture[id.xy] + 1) / 2;
+    }
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateHeatmapColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    float data = heat_texture[id.xy];
+    float3 color;
+    if (data < 0.5)
+    {
+        float heat = data * 2;
+        color = float3(heat, heat, 1 - heat);
+    }
+    else
+    {
+        float heat = (data - 0.5) * 2;
+        color = float3(1, 1 - heat, 0);
+    }
+    color_texture_out[id.xy] = float4(color, 1);
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateHumidityColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    color_texture_out[id.xy] = float4(0, 0, humidity_texture[id.xy], 1);   
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateBiomeColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    float4 color;
+    if (has_ocean && height_texture[id.xy] < 0)
+    {
+        float heightValue = 1 + height_texture[id.xy];
+        color = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, heightValue * height)];
+    }
+    else
+    {
+        color = gradient_biome_texture[uint2(heat_texture[id.xy] * width, humidity_texture[id.xy] * height)];
+    }
+    color_texture_out[id.xy] = color;
+}

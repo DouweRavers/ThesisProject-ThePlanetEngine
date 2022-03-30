@@ -54,7 +54,7 @@ namespace PlanetEngine
         public static Texture2D GenerateBaseTexture(Texture2D parentBaseTexture, Rect zone)
         {
             activeShader = baseTextureShader;
-            activeKernel = activeShader.FindKernel("GenerateBaseTexture");
+            activeKernel = activeShader.FindKernel("RegenerateBaseTexture");
             RenderTexture baseTexture = CreateRenderTexture(parentBaseTexture.width, parentBaseTexture.height, "base_texture_out");
             activeShader.SetTexture(activeKernel, "base_texture", parentBaseTexture);
             SetZone(zone, parentBaseTexture.width, parentBaseTexture.height);
