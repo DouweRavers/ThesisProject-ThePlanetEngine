@@ -116,7 +116,6 @@ namespace PlanetEngine
             return renderer.GetOutputTexture();
         }
 
-
         public static Texture2D GetHumidityTextureColored(Texture2D dataTexture)
         {
             TextureRenderer renderer = CreateInstance<TextureRenderer>();
@@ -126,7 +125,7 @@ namespace PlanetEngine
             return renderer.GetOutputTexture();
         }
 
-        public static Texture2D GetBiomeTexture(Texture2D heightTexture, Texture2D heatTexture, Texture2D humidityTexture, PlanetData data)
+        public static Texture2D GetBiomeTextureColored(Texture2D heightTexture, Texture2D heatTexture, Texture2D humidityTexture, PlanetData data)
         {
             TextureRenderer renderer = CreateInstance<TextureRenderer>();
             renderer.SetKernel("GenerateBiomeColorTexture", ShaderType.COLOR);
@@ -139,6 +138,27 @@ namespace PlanetEngine
             renderer.OutputTextureProperties("color_texture_out", heightTexture.width, heightTexture.height);
             return renderer.GetOutputTexture();
         }
+
+        public static Texture2D GetOceanTextureColored(Texture2D heightTexture, PlanetData data)
+        {
+            TextureRenderer renderer = CreateInstance<TextureRenderer>();
+            renderer.SetKernel("GenerateOceanColorTexture", ShaderType.COLOR);
+            renderer.AddTexture("height_texture", heightTexture);
+            renderer.AddTexture("gradient_ocean_texture", data.OceanGradient.GetTexture(heightTexture.width, heightTexture.height));
+            renderer.OutputTextureProperties("color_texture_out", heightTexture.width, heightTexture.height);
+            return renderer.GetOutputTexture();
+        }
+
+        public static Texture2D GetGroundTextureColored(Texture2D heatTexture, Texture2D humidityTexture, PlanetData data)
+        {
+            TextureRenderer renderer = CreateInstance<TextureRenderer>();
+            renderer.SetKernel("GenerateGroundColorTexture", ShaderType.COLOR);
+            renderer.AddTexture("heat_texture", heatTexture);
+            renderer.AddTexture("humidity_texture", humidityTexture);
+            renderer.AddTexture("gradient_biome_texture", data.biomeGradient.GetTexture(heatTexture.width, heatTexture.height));
+            renderer.OutputTextureProperties("color_texture_out", heatTexture.width, heatTexture.height);
+            return renderer.GetOutputTexture();
+        }
         #endregion
 
         #region Effect textures
@@ -149,6 +169,16 @@ namespace PlanetEngine
             renderer.AddTexture("height_texture", heightTexture);
             renderer.AddValue("reflectiveness", data.OceanReflectiveness);
             renderer.OutputTextureProperties("reflective_texture_out", heightTexture.width, heightTexture.height);
+            return renderer.GetOutputTexture();
+        }
+
+        public static Texture2D GetNormalTexture(Texture2D heightTexture, PlanetData data) {
+            TextureRenderer renderer = CreateInstance<TextureRenderer>();
+            renderer.SetKernel("GenerateNormalTexture", ShaderType.EFFECT);
+            renderer.AddTexture("height_texture", heightTexture);
+            renderer.AddValue("strenght", 10f * data.heightDifference);
+            renderer.AddValue("has_ocean", data.HasOcean);
+            renderer.OutputTextureProperties("normal_texture_out", heightTexture.width, heightTexture.height);
             return renderer.GetOutputTexture();
         }
         #endregion

@@ -17,6 +17,7 @@ namespace PlanetEngine
         public float Radius = 10f;
         // Heightmap
         public float ContinentScale = 0.5f;
+        public float heightDifference = 0.2f;
         // Ocean
         public bool HasOcean = false;
         public float OceanReflectiveness = 0.7f;
@@ -62,11 +63,17 @@ namespace PlanetEngine
         }
 
         public void LoadData(string name) {
-            string content = File.ReadAllText("Assets/PlanetEngineData/" + name + "-planetData.json");
-            string[] parsedContent = content.Split('$');
-            JsonUtility.FromJsonOverwrite(parsedContent[0], this);
-            JsonUtility.FromJsonOverwrite(parsedContent[1], OceanGradient);
-            JsonUtility.FromJsonOverwrite(parsedContent[2], biomeGradient);
+            if (File.Exists("Assets/PlanetEngineData/" + name + "-planetData.json"))
+            {
+                string content = File.ReadAllText("Assets/PlanetEngineData/" + name + "-planetData.json");
+                string[] parsedContent = content.Split('$');
+                JsonUtility.FromJsonOverwrite(parsedContent[0], this);
+                JsonUtility.FromJsonOverwrite(parsedContent[1], OceanGradient);
+                JsonUtility.FromJsonOverwrite(parsedContent[2], biomeGradient);
+            }
+            else {
+                throw new FileNotFoundException();
+            }
         }
     }
 }

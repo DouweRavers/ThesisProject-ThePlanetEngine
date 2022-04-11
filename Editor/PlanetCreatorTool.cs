@@ -177,6 +177,7 @@ namespace PlanetEngine
                         generatedPlanetObject.tag = "PlanetEngine";
                         generatedPlanetObject.AddComponent<Planet>().CreateNewPlanet(data);
                         generatedPlanetObject.transform.parent = planet.transform.parent;
+                        planet.gameObject.SetActive(false);
                     }
                     planet.Phase++;
                     changed = true;
@@ -222,6 +223,7 @@ namespace PlanetEngine
 
             int seed = planet.Data.Seed;
             float scale = planet.Data.ContinentScale;
+            float difference = planet.Data.heightDifference;
             bool ocean = planet.Data.HasOcean;
 
             GUILayout.BeginHorizontal();
@@ -236,6 +238,11 @@ namespace PlanetEngine
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
+            GUILayout.Label("Height difference");
+            planet.Data.heightDifference = EditorGUILayout.Slider(planet.Data.heightDifference, 0f, 1f);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             GUILayout.Label("Oceans");
             planet.Data.HasOcean = EditorGUILayout.Toggle(planet.Data.HasOcean);
             GUILayout.EndHorizontal();
@@ -243,6 +250,7 @@ namespace PlanetEngine
 
             if (seed != planet.Data.Seed ||
                 scale != planet.Data.ContinentScale ||
+                difference != planet.Data.heightDifference ||
                 ocean != planet.Data.HasOcean) changed = true;
 
             ShowPanelFooter(PreviewPhase.HEIGHTMAP);
@@ -803,6 +811,7 @@ namespace PlanetEngine
             {
                 planet.Data.Seed = UnityEngine.Random.Range(1, 1000);
                 planet.Data.ContinentScale = UnityEngine.Random.Range(0.1f, 5f);
+                planet.Data.heightDifference = UnityEngine.Random.Range(0f, 1f);
                 planet.Data.HasOcean = UnityEngine.Random.Range(0, 2) == 0;
                 planet.Data.OceanGradient = CreateInstance<Gradient2D>();
                 List<GradientPoint> points = new List<GradientPoint>();
@@ -835,7 +844,7 @@ namespace PlanetEngine
                 List<GradientPoint> points = new List<GradientPoint>();
                 for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
                 {
-                    Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1, 0f, 1f, 1f, 1f);
+                    Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.5f, 1, 0.5f, 1f, 1f, 1f);
                     Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
                     float randWeight = UnityEngine.Random.Range(0, 5f);
                     points.Add(new GradientPoint(randColor, randVec, randWeight));

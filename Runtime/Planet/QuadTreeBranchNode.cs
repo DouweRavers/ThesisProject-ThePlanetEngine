@@ -40,28 +40,24 @@ namespace PlanetEngine {
 	[RequireComponent(typeof(MeshRenderer))]
 	[RequireComponent(typeof(MeshFilter))]
 	internal class QuadTreeBranchNode : MonoBehaviour {
-		#region Properties
+
+		public BranchData Data { get { return _data; } }
+		BranchData _data;
 		public bool Visible
 		{
 			get { return GetComponent<MeshRenderer>().enabled; }
-			set { 
+			set
+			{
 				GetComponent<MeshRenderer>().enabled = value;
 				OceanNode oceanNode = GetComponentInChildren<OceanNode>();
 				if (oceanNode != null) oceanNode.Visible = value;
 			}
 		}
 		public bool Divided = false;
-
 		Transform target = null;
-		#endregion
 
-		#region Planet engine Interface
-		public BranchData Data { get { return _data; } }
-		BranchData _data;
-        #endregion
-
-        #region Branching Process
-        public void UpdateQuadTree() {
+		#region Branching Process
+		public void UpdateQuadTree() {
 			if(target == null) target = Camera.main.transform;
 			float targetDistance = Vector3.Distance(target.position, transform.position);
 			if (Divided) {

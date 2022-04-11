@@ -1,9 +1,12 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateHeightmapReflectiveTexture
+#pragma kernel GenerateNormalTexture
 
 
 // Procedural data
 float reflectiveness;
+float strenght;
+bool has_ocean;
 
 // Texture data
 uint height;
@@ -14,6 +17,7 @@ Texture2D<float> height_texture;
 
 // Output
 RWTexture2D<float4> reflective_texture_out;
+RWTexture2D<float4> normal_texture_out;
 
 [numthreads(1, 1, 1)]
 void GenerateHeightmapReflectiveTexture(uint3 id : SV_DispatchThreadID)
@@ -26,4 +30,29 @@ void GenerateHeightmapReflectiveTexture(uint3 id : SV_DispatchThreadID)
     {
         reflective_texture_out[id.xy] = reflectiveness;
     }
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateNormalTexture(uint3 id : SV_DispatchThreadID)
+{
+    float Left, Right, Up, Down;
+    if (has_ocean)
+    {
+        Left = clamp(height_texture[id.xy + uint2(-1, 0)], 0, 1);
+        Right = clamp(height_texture[id.xy + uint2(1, 0)], 0, 1);
+        Up = clamp(height_texture[id.xy + uint2(0, 1)], 0, 1);
+        Down = clamp(height_texture[id.xy + uint2(0, -1)], 0, 1);
+    }
+    else
+    {
+        Left = height_texture[id.xy + uint2(-1, 0)];
+        Right = height_texture[id.xy + uint2(1, 0)];
+        Up = height_texture[id.xy + uint2(0, 1)];
+        Down = height_texture[id.xy + uint2(0, -1)];
+    }
+    
+    float xDelta = ((Left - Right) * strenght + 1) * 0.5;
+    float yDelta = ((Up - Down) * strenght + 1) * 0.5;
+    normal_texture_out[id.xy] = float4(xDelta, yDelta, 1, 1);
 }

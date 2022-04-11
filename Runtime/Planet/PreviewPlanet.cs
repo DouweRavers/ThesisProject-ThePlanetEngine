@@ -1,4 +1,3 @@
-using System.IO;
 using UnityEngine;
 namespace PlanetEngine
 {
@@ -9,42 +8,40 @@ namespace PlanetEngine
     [RequireComponent(typeof(MeshFilter))]
     public class PreviewPlanet : MonoBehaviour
     {
-        #region Properties
         public PlanetData Data = null;
         public bool PreviewSettings = true;
         public PreviewPhase Phase = PreviewPhase.BASICS;
-        #endregion
 
-        #region Private attributes
-        #endregion
-
-        #region Events
         void Start()
         {
             Data = ScriptableObject.CreateInstance<PlanetData>();
-            if (File.Exists("Assets/PlanetEngineData/" + name + "-planetData.json"))
+            try
             {
                 Data.LoadData(name);
             }
+            catch (System.Exception)
+            {
+                Data = ScriptableObject.CreateInstance<PlanetData>();
+            }
             Regenerate();
         }
-        #endregion
 
-        #region Public methods
+        /// <summary>
+        /// Destroys current preview mesh and recreates a new one.
+        /// </summary>
         public void Regenerate()
         {
             if (transform.childCount > 0) DestroyImmediate(transform.GetChild(0).gameObject);
-            if (PreviewSettings) PreviewCurrentSettings();
-            else PreviewFullProcess();
+            GeneratePreview();
         }
-        #endregion
 
-        #region Private methods
-        void PreviewCurrentSettings()
+        // Creates a preview mesh according to current phase. If preview settings is disabled it will generate for the last phase.
+        void GeneratePreview()
         {
             GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GenerateHeightenedSphereMesh(Data);
-            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(Data, Phase, textureSize:1024);
-            if (Data.HasAtmosphere)
+            PreviewPhase phase = PreviewSettings ? Phase : PreviewPhase.NONE;
+            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(Data, phase, textureSize: 1024);
+            if ((!PreviewSettings || PreviewPhase.CLIMATE <= Phase) && Data.HasAtmosphere)
             {
                 GameObject Atmosphere = new GameObject("Atmosphere");
                 Atmosphere.tag = "PlanetEngine";
@@ -54,13 +51,5 @@ namespace PlanetEngine
                 Atmosphere.hideFlags = HideFlags.HideInHierarchy;
             }
         }
-
-        void PreviewFullProcess()
-        {
-            GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GenerateHeightenedSphereMesh(Data);
-            GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(Data, textureSize: 1024);
-        }
-        #endregion
-
     }
 }

@@ -9,6 +9,7 @@ namespace PlanetEngine
             // Material and textures
             Material material = new Material(Shader.Find("Standard"));
             Texture2D colorTexture = null;
+            Texture2D normalTexure = null;
             Texture2D specularTexture = null;
 
 
@@ -22,6 +23,7 @@ namespace PlanetEngine
 
             // Generate heights
             Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, data);
+            normalTexure = ProceduralTexture.GetNormalTexture(heightTexture, data);
             if (data.HasOcean) specularTexture = ProceduralTexture.GetOceanReflectiveTexture(heightTexture, data);
             if (phase == PreviewPhase.HEIGHTMAP)
             {
@@ -42,7 +44,7 @@ namespace PlanetEngine
             }
 
             // Biome textures
-            colorTexture = ProceduralTexture.GetBiomeTexture(heightTexture, heatmapTexture, humidityTexture, data);
+            colorTexture = ProceduralTexture.GetBiomeTextureColored(heightTexture, heatmapTexture, humidityTexture, data);
             if (phase == PreviewPhase.BIOMES)
             {
                 goto ReturnMaterial;
@@ -52,6 +54,8 @@ namespace PlanetEngine
             material.SetTexture("_MainTex", colorTexture);
             if (specularTexture != null) material.EnableKeyword("_METALLICGLOSSMAP");
             material.SetTexture("_MetallicGlossMap", specularTexture);
+            if (normalTexure != null) material.EnableKeyword("_NORMALMAP");
+            material.SetTexture("_BumpMap", normalTexure);
             return material;
         }
 
@@ -64,7 +68,7 @@ namespace PlanetEngine
             if (data.HasOcean) specularTexture = ProceduralTexture.GetOceanReflectiveTexture(heightTexture, data);
             Texture2D heatmapTexture = ProceduralTexture.GetHeatTexture(baseTexture, heightTexture, data);
             Texture2D humidityTexture = ProceduralTexture.GetHumidityTexture(heightTexture, data);
-            Texture2D colorTexture = ProceduralTexture.GetBiomeTexture(heightTexture, heatmapTexture, humidityTexture, data);
+            Texture2D colorTexture = ProceduralTexture.GetBiomeTextureColored(heightTexture, heatmapTexture, humidityTexture, data);
             material.SetTexture("_MainTex", colorTexture);
             if (specularTexture != null) material.EnableKeyword("_METALLICGLOSSMAP");
             material.SetTexture("_MetallicGlossMap", specularTexture);

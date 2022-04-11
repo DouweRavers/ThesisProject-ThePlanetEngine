@@ -3,6 +3,8 @@
 #pragma kernel GenerateHeatmapColorTexture
 #pragma kernel GenerateHumidityColorTexture
 #pragma kernel GenerateBiomeColorTexture
+#pragma kernel GenerateOceanColorTexture
+#pragma kernel GenerateGroundColorTexture
 
 // Procedural data
 bool has_ocean;
@@ -85,4 +87,18 @@ void GenerateBiomeColorTexture(uint3 id : SV_DispatchThreadID)
         color = gradient_biome_texture[uint2(heat_texture[id.xy] * width, humidity_texture[id.xy] * height)];
     }
     color_texture_out[id.xy] = color;
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateOceanColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    color_texture_out[id.xy] = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, (1 + height_texture[id.xy]) * height)];
+}
+
+
+[numthreads(1, 1, 1)]
+void GenerateGroundColorTexture(uint3 id : SV_DispatchThreadID)
+{
+    color_texture_out[id.xy] = gradient_biome_texture[uint2(heat_texture[id.xy] * width, humidity_texture[id.xy] * height)];
 }
