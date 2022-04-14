@@ -6,37 +6,19 @@ namespace PlanetEngine {
 
 	[ExecuteInEditMode]
 	[RequireComponent(typeof(MeshFilter))]
-	[RequireComponent(typeof(MeshRenderer))]
-	internal class OceanNode : MonoBehaviour
+	[RequireComponent(typeof(MeshRenderer))] 
+	public class OceanNode : MonoBehaviour
     {
 		public bool Visible {
 			get { return GetComponent<MeshRenderer>().enabled; }
 			set { GetComponent<MeshRenderer>().enabled = value; } 
 		}
 
-		public void CreateOcean(Mesh mesh) {
-			mesh.RecalculateBounds();
-			Vector3 localMeshCenter = mesh.bounds.center;
-			mesh = MeshTool.OffsetMesh(mesh, -localMeshCenter);
-			transform.position = transform.parent.TransformPoint(localMeshCenter) - transform.parent.position;
-			transform.localEulerAngles = Vector3.zero;
-			mesh.RecalculateBounds();
-			mesh.RecalculateNormals();
-			mesh.RecalculateTangents();
-			mesh.Optimize();
-			GetComponent<MeshFilter>().mesh = mesh;
+		public void CreateOcean(Mesh planeMesh, Texture2D baseTexture) {
+			Planet planet = transform.GetComponentInParent<Planet>();
 
-			Material material = new Material(Shader.Find("Standard"));
-			material.color = Color.blue;
-			GetComponent<MeshRenderer>().material = material;
-		}
-
-		public void ApplyTexture(Texture2D texture)
-		{
-			Material material = new Material(Shader.Find("Standard"));
-			PlanetData planetData = GetComponentInParent<Planet>().Data;
-			//material.mainTexture = TextureTool.GenerateColorTexture(TextureTool.GenerateHeightTexture(texture, planetData.Seed), planetData.ColorC, planetData.ColorD);
-			GetComponent<MeshRenderer>().sharedMaterial = material;
+			GetComponent<MeshFilter>().mesh = ProceduralMesh.GetBranchMesh(planeMesh, transform, true);
+			GetComponent<MeshRenderer>().material = ProceduralMaterial.GetOceanMaterial(planet.Data, baseTexture);
 		}
 	}
 }

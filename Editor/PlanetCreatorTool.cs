@@ -4,26 +4,35 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
+    /// <summary>
+    /// This class represents the UI for creating the planet. It in essence changes the 
+    /// properties of the planetData object which is displayed by a previewPlanet component.
+    /// Once the creation is done the configured planetData is used by the actual planet system
+    /// with LODs, quadtree and terrain.
+    /// </summary>
 
     [CustomEditor(typeof(PreviewPlanet))]
-    internal class PlanetCreatorTool : Editor
+    public class PlanetCreatorTool : Editor
     {
-        #region Private attributes
-        PreviewPlanet planet;
-        Dictionary<string, GUIStyle> styles;
-        Texture2D oceanTexture = null;
-        Texture2D biomeTexture = null;
-        bool changed = false;
+        // Used for limited updates
         static float lastUpdate = 0;
 
-        // move to data
-        Color oceanGradientColor = Color.blue;
+        // reference to component
+        PreviewPlanet planet;
+        // Collection of styles used by the UI
+        Dictionary<string, GUIStyle> styles;
+        // Textures that are displayed in the UI
+        Texture2D oceanTexture = null;
+        Texture2D biomeTexture = null;
+        // Indicator if values are changed
+        bool changed = false;
+        // Properties of currently selected point
+        Color oceanGradientColor;
         int selectedPoint = -1;
 
         // temp
         Mesh mesh;
         Color color;
-        #endregion
 
 
         public override void OnInspectorGUI()
@@ -37,6 +46,7 @@ namespace PlanetEngine
                 planet.Data.SaveData(planet.name);
                 planet.Regenerate();
                 lastUpdate = Time.realtimeSinceStartup;
+                SceneView.lastActiveSceneView.Frame(planet.GetComponent<MeshRenderer>().bounds, false);
             }
         }
 
@@ -171,15 +181,7 @@ namespace PlanetEngine
                 }
                 if (GUILayout.Button(Resources.Load<Texture2D>(planet.Phase == PreviewPhase.VEGETATION ? "UI/Add" : "UI/RightArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
                 {
-                    if (planet.Phase == PreviewPhase.VEGETATION) {
-                        PlanetData data = planet.Data;
-                        GameObject generatedPlanetObject = new GameObject(planet.name);
-                        generatedPlanetObject.tag = "PlanetEngine";
-                        generatedPlanetObject.AddComponent<Planet>().CreateNewPlanet(data);
-                        generatedPlanetObject.transform.parent = planet.transform.parent;
-                        planet.gameObject.SetActive(false);
-                    }
-                    planet.Phase++;
+                    if (planet.Phase != PreviewPhase.VEGETATION) planet.Phase++;
                     changed = true;
                 }
                 GUILayout.Label("", GUILayout.Width(50));
@@ -197,7 +199,7 @@ namespace PlanetEngine
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Radius:", GUILayout.Width(100f));
-            planet.Data.Radius = EditorGUILayout.Slider(planet.Data.Radius, 1f, 100f);
+            planet.Data.Radius = EditorGUILayout.Slider(planet.Data.Radius/100f, 1f, 100f) * 100f;
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -802,7 +804,7 @@ namespace PlanetEngine
 
             void RandomizeCelestialProperties()
             {
-                planet.Data.Radius = UnityEngine.Random.Range(1f, 100f);
+                planet.Data.Radius = UnityEngine.Random.Range(100f, 10000f);
                 planet.Data.LODSphereCount = UnityEngine.Random.Range(2, 5);
                 planet.Data.MaxDepth = UnityEngine.Random.Range(2, 13);
             }

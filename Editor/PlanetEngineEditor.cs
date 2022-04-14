@@ -11,7 +11,6 @@ using UnityEngine;
 namespace PlanetEngine {
 	public static class PlanetEngineEditor {
         
-		#region Private static methods
         [MenuItem("GameObject/3D Object/Planet", false, 40)]
 		static void AddPlanetCreatorToScene()
 		{
@@ -43,6 +42,5 @@ namespace PlanetEngine {
 				so.Update();
 			}
 		}
-        #endregion
     }
 }

@@ -5,8 +5,8 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
-    internal enum ShaderType { BASE, DATA, COLOR, EFFECT, GRADIENT, NONE }
-    internal class TextureRenderer : ScriptableObject
+    public enum ShaderType { BASE, DATA, COLOR, EFFECT, GRADIENT, NONE }
+    public class TextureRenderer : ScriptableObject
     {
         int _kernelId = -1;
         ComputeShader _shader;

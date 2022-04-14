@@ -4,11 +4,11 @@ namespace PlanetEngine {
 
 	[RequireComponent(typeof(MeshRenderer))]
 	[RequireComponent(typeof(MeshFilter))]
-	internal class SingleMeshNode : MonoBehaviour {
+	public class SingleMeshNode : MonoBehaviour {
 
 		public void Create(int subdivisions, int textureSize, PlanetData data) {
-			GetComponent<MeshFilter>().mesh = ProceduralAlgorithm.GenerateHeightenedSphereMesh(data, subdivisions);
-			GetComponent<MeshRenderer>().sharedMaterial = ProceduralAlgorithm.GenerateMaterial(data, textureSize:textureSize);
+			GetComponent<MeshFilter>().mesh = ProceduralMesh.GetPlanetMesh(data, subdivisions);
+			GetComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetPhasedMaterial(data, textureSize:textureSize);
 		}
 	}
 }

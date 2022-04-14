@@ -3,27 +3,50 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
+    /// <summary>
+    /// A component that manages the in game planet/terrain engine. It assumes the planet properties do not change.
+    /// </summary>
     public class Planet : MonoBehaviour
     {
         // The target for rendering the quad tree
-        public Transform target = null;
-        // Holds all data conserning the planet generation process.
-        public PlanetData Data;
-
-        void Start()
+        public Transform Target
         {
-            if (target == null) target = Camera.main.transform;
-            Data = ScriptableObject.CreateInstance<PlanetData>();
-            try
+            get
             {
-                Data.LoadData(name);
+                if (_target == null) _target = Camera.main.transform;
+                return _target;
             }
-            catch (System.Exception)
-            {
-                Data = ScriptableObject.CreateInstance<PlanetData>();
-            }
-            CreateNewPlanet();
+            set { _target = value; }
         }
+        Transform _target;
+
+        // Holds all data conserning the planet generation process.
+        public PlanetData Data
+        {
+            get
+            {
+                if (_data == null)
+                {
+                    _data = ScriptableObject.CreateInstance<PlanetData>();
+                    try
+                    {
+                        _data.LoadData(name);
+                    }
+                    catch (System.Exception)
+                    {
+                        Debug.LogWarning("No data file exists for this planet, new one is created.");
+                    }
+                }
+                return _data;
+            }
+            set
+            {
+                _data = value;
+                CreateNewPlanet();
+            }
+
+        }
+        PlanetData _data;
 
         /// <summary>
         /// Destroys previous generated planet and generates a new one instead.
@@ -36,7 +59,7 @@ namespace PlanetEngine
             for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
 
             // if no data was loaded create new data. 
-            if (Data == null) Data = ScriptableObject.CreateInstance<PlanetData>();
+            if (_data == null) _data = ScriptableObject.CreateInstance<PlanetData>();
             CreatePlanetFromData();
         }
 
@@ -48,8 +71,8 @@ namespace PlanetEngine
         public void CreateNewPlanet(int seed)
         {
             // Create new data and set seed.
-            Data = ScriptableObject.CreateInstance<PlanetData>();
-            Data.Seed = seed;
+            _data = ScriptableObject.CreateInstance<PlanetData>();
+            _data.Seed = seed;
             CreateNewPlanet();
         }
 
@@ -60,7 +83,7 @@ namespace PlanetEngine
         /// <param name="data">A struct containing generation properties for the planet.</param>
         public void CreateNewPlanet(PlanetData data)
         {
-            Data = data;
+            _data = data;
             CreateNewPlanet();
         }
 
@@ -73,16 +96,16 @@ namespace PlanetEngine
             LevelsOfDetail.Reverse();
             ConfigureLOD(LevelsOfDetail);
         }
-        
+
         // Creates LOD spheres as child objects.
         void CreateSingleMeshObjects(List<Transform> LODlist)
         {
-            for (int i = 0; i < Data.LODSphereCount; i++)
+            for (int i = 0; i < _data.LODSphereCount; i++)
             {
                 GameObject singleMeshObject = new GameObject(gameObject.name + " - LODSphere: " + i);
                 singleMeshObject.tag = "PlanetEngine";
                 singleMeshObject.transform.SetParent(transform);
-                singleMeshObject.AddComponent<SingleMeshNode>().Create(2 * i + 1, 256 * (int)Mathf.Pow(2, i), Data);
+                singleMeshObject.AddComponent<SingleMeshNode>().Create(2 * i + 1, 256 * (int)Mathf.Pow(2, i), _data);
                 LODlist.Add(singleMeshObject.transform);
             }
         }

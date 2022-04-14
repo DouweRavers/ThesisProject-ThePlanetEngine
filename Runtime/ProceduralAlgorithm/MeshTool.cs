@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PlanetEngine {
 
-	internal static class MeshTool {
+	public static class MeshTool {
 
 		/*###########################################
 		  #           Primitive Meshes              #
