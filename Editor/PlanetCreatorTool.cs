@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
+    internal enum Preset { NONE, EARTH, MARS, MOON }
     /// <summary>
     /// This class represents the UI for creating the planet. It in essence changes the 
     /// properties of the planetData object which is displayed by a previewPlanet component.
@@ -12,7 +13,7 @@ namespace PlanetEngine
     /// </summary>
 
     [CustomEditor(typeof(PreviewPlanet))]
-    public class PlanetCreatorTool : Editor
+    internal class PlanetCreatorTool : Editor
     {
         // Used for limited updates
         static float lastUpdate = 0;
@@ -34,7 +35,6 @@ namespace PlanetEngine
         Mesh mesh;
         Color color;
 
-
         public override void OnInspectorGUI()
         {
             ShowGenerationMenu();
@@ -45,8 +45,8 @@ namespace PlanetEngine
                 if (!AssetDatabase.IsValidFolder("Assets/PlanetEngineData")) AssetDatabase.CreateFolder("Assets", "PlanetEngineData");
                 planet.Data.SaveData(planet.name);
                 planet.Regenerate();
-                lastUpdate = Time.realtimeSinceStartup;
                 SceneView.lastActiveSceneView.Frame(planet.GetComponent<MeshRenderer>().bounds, false);
+                lastUpdate = Time.realtimeSinceStartup;
             }
         }
 
@@ -56,6 +56,7 @@ namespace PlanetEngine
             CreateStyles();
             planet.GetComponent<MeshFilter>().hideFlags = HideFlags.HideInInspector;
             planet.GetComponent<MeshRenderer>().hideFlags = HideFlags.HideInInspector;
+            SceneView.lastActiveSceneView.Frame(planet.GetComponent<MeshRenderer>().bounds, false);
         }
 
         void CreateStyles()
@@ -194,27 +195,18 @@ namespace PlanetEngine
             ShowPanelHeader("Basics - " + planet.name);
 
             float oldRadius = planet.Data.Radius;
-            int oldLOD = planet.Data.LODSphereCount;
-            int oldDepth = planet.Data.MaxDepth;
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Radius:", GUILayout.Width(100f));
-            planet.Data.Radius = EditorGUILayout.Slider(planet.Data.Radius/100f, 1f, 100f) * 100f;
+            planet.Data.Radius = EditorGUILayout.Slider(planet.Data.Radius/1000f, 1f, 100f) * 1000f;
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Detail levels:", GUILayout.Width(100f));
-            planet.Data.LODSphereCount = EditorGUILayout.IntSlider(planet.Data.LODSphereCount, 2, 4);
+            GUILayout.Label("Preset:", GUILayout.Width(100f));
+            EditorGUILayout.EnumFlagsField(Preset.NONE);
             GUILayout.EndHorizontal();
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Subdivisions:", GUILayout.Width(100f));
-            planet.Data.MaxDepth = EditorGUILayout.IntSlider(planet.Data.MaxDepth, 2, 12);
-            GUILayout.EndHorizontal();
-
-            if (oldRadius != planet.Data.Radius ||
-                oldLOD != planet.Data.LODSphereCount ||
-                oldDepth != planet.Data.MaxDepth) changed = true;
+            if (oldRadius != planet.Data.Radius) changed = true;
 
             ShowPanelFooter(PreviewPhase.BASICS);
         }
@@ -345,90 +337,8 @@ namespace PlanetEngine
         void ShowVegetationMenu()
         {
             ShowPanelHeader("Vegetation - " + planet.name);
-
-
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("vegetation"))
-            {
-            }
-            if (GUILayout.Button("type"))
-            {
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Solar heat");
-            EditorGUILayout.Slider(0.5f, 0f, 1f);
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(Resources.Load<Texture2D>("UI/Add")))
-            {
-            }
-            if (GUILayout.Button(Resources.Load<Texture2D>("UI/RandomIcon")))
-            {
-            }
-            if (GUILayout.Button("Biome X"))
-            {
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndVertical();
-            GUILayout.FlexibleSpace();
-            //texture2D = (Texture2D)EditorGUILayout.ObjectField(texture2D, typeof(Texture2D), false, GUILayout.Width(250));
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(Texture2D.whiteTexture, GUILayout.ExpandWidth(true), GUILayout.Height(2));
-            GUILayout.Space(100);
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("vegetation"))
-            {
-            }
-            if (GUILayout.Button("type"))
-            {
-            }
-            GUILayout.EndHorizontal();
-
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(Resources.Load<Texture2D>("UI/Add")))
-            {
-            }
-            if (GUILayout.Button(Resources.Load<Texture2D>("UI/RandomIcon")))
-            {
-            }
-            color = EditorGUILayout.ColorField(color);
-            /*GUILayout.Label("", styles["texture"], GUILayout.Width(texture2D.width * 3), GUILayout.Height(texture2D.height * 3));
-            Rect textureRect = GUILayoutUtility.GetLastRect();
-            Event e = Event.current;
-            if (e.type == EventType.MouseDown && textureRect.x < e.mousePosition.x && e.mousePosition.x < textureRect.x + textureRect.width &&
-                textureRect.y < e.mousePosition.y && e.mousePosition.y < textureRect.y + textureRect.height)
-            {
-                int x = (int)(e.mousePosition.x - textureRect.x) / 3;
-                int y = (int)(textureRect.y + textureRect.width - e.mousePosition.y) / 3;
-                texture2D.SetPixel(x, y, color);
-                texture2D.SetPixel(x + 1, y, color);
-                texture2D.SetPixel(x - 1, y, color);
-                texture2D.SetPixel(x, y + 1, color);
-                texture2D.SetPixel(x, y - 1, color);
-                texture2D.Apply();
-                GUI.changed = true;
-            }
-            */
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndVertical();
-            GUILayout.FlexibleSpace();
-            mesh = (Mesh)EditorGUILayout.ObjectField(mesh, typeof(Mesh), true, GUILayout.Width(250));
-            GUILayout.EndHorizontal();
-
+            GUILayout.Label("Tree:");
+            //EditorGUILayout.ObjectField(null);
             ShowPanelFooter();
         }
 
@@ -790,71 +700,11 @@ namespace PlanetEngine
         void RandomizeProperties(PreviewPhase phase)
         {
             UnityEngine.Random.InitState(Time.frameCount);
-            if (phase == PreviewPhase.BASICS) RandomizeCelestialProperties();
-            else if (phase == PreviewPhase.HEIGHTMAP) RandomizeHeightMapProperties();
-            else if (phase == PreviewPhase.CLIMATE) RandomizeClimateProperties();
-            else if (phase == PreviewPhase.BIOMES) RandomizeBiomeProperties();
-            else
-            {
-                RandomizeCelestialProperties();
-                RandomizeHeightMapProperties();
-                RandomizeClimateProperties();
-                RandomizeBiomeProperties();
-            }
-
-            void RandomizeCelestialProperties()
-            {
-                planet.Data.Radius = UnityEngine.Random.Range(100f, 10000f);
-                planet.Data.LODSphereCount = UnityEngine.Random.Range(2, 5);
-                planet.Data.MaxDepth = UnityEngine.Random.Range(2, 13);
-            }
-
-            void RandomizeHeightMapProperties()
-            {
-                planet.Data.Seed = UnityEngine.Random.Range(1, 1000);
-                planet.Data.ContinentScale = UnityEngine.Random.Range(0.1f, 5f);
-                planet.Data.heightDifference = UnityEngine.Random.Range(0f, 1f);
-                planet.Data.HasOcean = UnityEngine.Random.Range(0, 2) == 0;
-                planet.Data.OceanGradient = CreateInstance<Gradient2D>();
-                List<GradientPoint> points = new List<GradientPoint>();
-                for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
-                {
-                    Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.8f, 1, 0.8f, 1f, 1f, 1f);
-                    Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
-                    float randWeight = UnityEngine.Random.Range(0, 5f);
-                    points.Add(new GradientPoint(randColor, randVec, randWeight));
-                }
-                planet.Data.OceanGradient.Points = points;
-                planet.Data.OceanGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
-                planet.Data.OceanReflectiveness = UnityEngine.Random.Range(0.5f, 1f);
-            }
-
-            void RandomizeClimateProperties()
-            {
-                planet.Data.SolarHeat = UnityEngine.Random.Range(0f, 1f);
-                planet.Data.HeightCooling = UnityEngine.Random.Range(0f, 1f);
-                planet.Data.HumidityTransfer = UnityEngine.Random.Range(0f, 1f);
-                planet.Data.HasAtmosphere = UnityEngine.Random.Range(0,2) == 0;
-                planet.Data.AtmosphereColor = UnityEngine.Random.ColorHSV(0f,1f, 0f, 1f, 0f, 1f, 0f, 0.2f);
-                planet.Data.HasClouds = UnityEngine.Random.Range(0, 2) == 0;
-                planet.Data.CloudDensity = UnityEngine.Random.Range(0f, 1f);
-            }
-
-            void RandomizeBiomeProperties()
-            {
-                planet.Data.biomeGradient = CreateInstance<Gradient2D>();
-                List<GradientPoint> points = new List<GradientPoint>();
-                for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
-                {
-                    Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.5f, 1, 0.5f, 1f, 1f, 1f);
-                    Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
-                    float randWeight = UnityEngine.Random.Range(0, 5f);
-                    points.Add(new GradientPoint(randColor, randVec, randWeight));
-                }
-                planet.Data.biomeGradient.Points = points;
-                planet.Data.biomeGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
-            }
-
+            if (phase == PreviewPhase.BASICS) planet.Data.RandomizeCelestialProperties();
+            else if (phase == PreviewPhase.HEIGHTMAP) planet.Data.RandomizeHeightMapProperties();
+            else if (phase == PreviewPhase.CLIMATE) planet.Data.RandomizeClimateProperties();
+            else if (phase == PreviewPhase.BIOMES) planet.Data.RandomizeBiomeProperties();
+            else planet.Data.Randomize();
         }
     }
 }

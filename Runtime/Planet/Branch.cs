@@ -10,12 +10,12 @@ namespace PlanetEngine
     /// </summary>
     [RequireComponent(typeof(MeshRenderer))]
     [RequireComponent(typeof(MeshFilter))]
-    public class QuadTreeBranchNode : MonoBehaviour
+    internal class Branch : BaseBranch
     {
         /// <summary>
         /// This property indicates if the current branch is visible.
         /// </summary>
-        public bool Visible
+        internal override bool Visible
         {
             get { return GetComponent<MeshRenderer>().enabled; }
             set
@@ -24,40 +24,42 @@ namespace PlanetEngine
                 if (ocean != null) ocean.Visible = value;
             }
         }
+
         /// <summary>
         /// The number divisions until this branch.
         /// </summary>
-        public int QuadDepth { get { return _quadDepth; } }
+        internal int QuadDepth { get { return _quadDepth; } }
         int _quadDepth;
         /// <summary>
         /// Is the branch currently divided in child branches.
         /// </summary>
-        public bool Divided { get { return _divided; } }
+        internal bool Divided { get { return _divided; } }
         bool _divided = false;
         /// <summary>
         /// The bounds of the planeMesh on the unit sphere.
         /// </summary>
-        public Bounds Bounds { get { return _bounds; } }
+        internal Bounds Bounds { get { return _bounds; } }
         Bounds _bounds;
         /// <summary>
         /// The base texture which other textures are generated from.
         /// </summary>
-        public Texture2D BaseTexture { get { return _baseTexture; } }
+        internal Texture2D BaseTexture { get { return _baseTexture; } }
         Texture2D _baseTexture;
 
         // Reference to the associate ocean mesh
-        OceanNode ocean;
+        OceanBranch ocean;
 
         #region Branching Process
         /// <summary>
         /// When the parent branch is active the Update method on this branch is called.
         /// </summary>
-        public void UpdateQuadTree()
+        internal void UpdateQuadTree()
         {
             Planet planet = GetComponentInParent<Planet>();
             // The distance between the centre of the branch and the target.
             float targetDistance = Vector3.Distance(planet.Target.position, transform.position);
-            float expandDistance = GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 0.6f;
+            // Distances at which a the branch shrinks or expands.
+            float expandDistance = GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 0.75f;
             float shrinkDistance = GetComponent<MeshFilter>().sharedMesh.bounds.size.magnitude * 1f;
             // the branch is currently split => in check if has to shrink or update child branches.
             // the branch is not split and thus active(=non divided and updating) => check if has to fold back up.
@@ -76,6 +78,7 @@ namespace PlanetEngine
             // If the max branching level is achieved the planet switches to a terrain.
             if (_quadDepth == planet.Data.MaxDepth)
             {
+                planet.SwitchToTerrain();
                 return;
             }
             // Create new child branches and disable own visuals.
@@ -89,7 +92,7 @@ namespace PlanetEngine
         {
             for (int i = 0; i < transform.childCount; i++)
             {
-                QuadTreeBranchNode branch = transform.GetChild(i).GetComponent<QuadTreeBranchNode>();
+                Branch branch = transform.GetChild(i).GetComponent<Branch>();
                 if (branch != null) Destroy(branch.gameObject);
             }
             Visible = true;
@@ -101,7 +104,7 @@ namespace PlanetEngine
         {
             for (int i = 0; i < transform.childCount; i++)
             {
-                QuadTreeBranchNode branch = transform.GetChild(i).GetComponent<QuadTreeBranchNode>();
+                Branch branch = transform.GetChild(i).GetComponent<Branch>();
                 if (branch != null) branch.UpdateQuadTree();
             }
         }
@@ -125,7 +128,7 @@ namespace PlanetEngine
                 else if (i == 1) zone = new Rect(0, 0.5f, 0.5f, 0.5f);
                 else if (i == 2) zone = new Rect(0.5f, 0, 0.5f, 0.5f);
                 else zone = new Rect(0.5f, 0.5f, 0.5f, 0.5f);
-                ChildQuadObject.AddComponent<QuadTreeBranchNode>().CreateBranch(this, zone);
+                ChildQuadObject.AddComponent<Branch>().CreateBranch(this, zone);
             }
             // Add the new renderers to the LOD system.
             LODGroup lodGroup = planet.GetComponent<LODGroup>();
@@ -142,7 +145,7 @@ namespace PlanetEngine
         /// Creates a branch with no parent branch.
         /// </summary>
         /// <param name="side">Indicates which side of the cube is generated. Used for basetexture.</param>
-        public void CreateBranch(CubeSides side)
+        internal void CreateBranch(CubeSides side)
         {
             // Is the first branch in a tree so depth is zero.
             _quadDepth = 0;
@@ -159,7 +162,7 @@ namespace PlanetEngine
         /// </summary>
         /// <param name="parent">Reference to the parent node.</param>
         /// <param name="zone">In 2D surface space, which zone the new quad is.</param>
-        public void CreateBranch(QuadTreeBranchNode parent, Rect zone)
+        internal void CreateBranch(Branch parent, Rect zone)
         {
             // Increase the depth by one based on parents depth. 
             _quadDepth = parent.QuadDepth + 1;
@@ -177,15 +180,12 @@ namespace PlanetEngine
         {
             Planet planet = GetComponentInParent<Planet>();
             // Generate a plane on a unit cube according to a certain size and offset.
-            Mesh planeMesh = MeshTool.GenerateUnitQuadMesh();
-            planeMesh = MeshTool.NormalizeAndAmplify(planeMesh, size);
-            planeMesh = MeshTool.OffsetMesh(planeMesh, offset);
-            MeshTool.SubdivideGPU(planeMesh, 5);
+            Mesh planeMesh = ProceduralMesh.GetBranchPlaneMesh(size, offset);
             // Store the position on the unit cube
             _bounds = planeMesh.bounds;
 
             // Generate the mesh surface of the branch
-            GetComponent<MeshFilter>().mesh = ProceduralMesh.GetBranchMesh(planeMesh, transform);
+            GetComponent<MeshFilter>().mesh = ProceduralMesh.GetBranchMesh(this, planeMesh);
             GetComponent<MeshRenderer>().material = ProceduralMaterial.GetLandMaterial(planet.Data, _baseTexture);
             if (planet.Data.HasOcean) CreateOcean(planeMesh);
         }
@@ -197,7 +197,7 @@ namespace PlanetEngine
             oceanObject.transform.SetParent(transform);
             oceanObject.transform.localPosition = Vector3.zero;
             oceanObject.transform.localEulerAngles = Vector3.zero;
-            ocean = oceanObject.AddComponent<OceanNode>();
+            ocean = oceanObject.AddComponent<OceanBranch>();
             ocean.CreateOcean(planeMesh, _baseTexture);
         }
         #endregion

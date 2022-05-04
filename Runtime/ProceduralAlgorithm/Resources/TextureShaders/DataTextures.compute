@@ -1,4 +1,4 @@
-#include "../ShaderLib/noiseSimplex.cginc"
+#include "../ShaderLib/ProceduralLib.cginc"
 
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateHeightmapTexture
@@ -31,38 +31,17 @@ RWTexture2D<float> humidity_texture_out;
 [numthreads(1, 1, 1)]
 void GenerateHeightmapTexture(uint3 id : SV_DispatchThreadID)
 {
-    float height_value = 0;
-    float divider = 0;
-    for (float i = 1; i < 10; i++)
-    {
-        height_value += snoise(continent_scale * i * base_texture[id.xy].xyz + seed) / i;
-        divider += 1 / i;
-    }
-    height_texture_out[id.xy] = height_value / divider;
+    height_texture_out[id.xy] = CalculateHeightValue(base_texture[id.xy].xyz, seed, continent_scale);
 }
-
-
-
 
 [numthreads(1, 1, 1)]
 void GenerateHeatTexture(uint3 id : SV_DispatchThreadID)
 {
-    
-    float locational_heat = 1 - abs(base_texture[id.xy].y);
-    float altitude_heat = (1 - height_texture[id.xy]) / 2;
-    float heat = pow(locational_heat, 2 * (1 - solar_heat)) * pow(altitude_heat, height_cooling);
-    heat_texture_out[id.xy] = heat;
+    heat_texture_out[id.xy] = CalculateHeatValue(base_texture[id.xy].xyz, height_texture[id.xy], solar_heat, height_cooling, has_ocean);
 }
 
 [numthreads(1, 1, 1)]
 void GenerateHumidityTexture(uint3 id : SV_DispatchThreadID)
 {
-    float humidity;
-    if (humidity_factor == 0)
-        humidity = height_texture[id.xy] < 0 ? 1 : 0;
-    else
-        humidity = pow(humidity_factor, clamp(height_texture[id.xy] * 2, 0, 1));
-    if (!has_ocean)
-        humidity = 0;
-    humidity_texture_out[id.xy] = humidity;
+    humidity_texture_out[id.xy] = CalculateHumidityValue(height_texture[id.xy], humidity_factor, has_ocean);
 }

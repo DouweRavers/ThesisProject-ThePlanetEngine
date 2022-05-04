@@ -5,21 +5,21 @@ namespace PlanetEngine
     /// <summary>
     /// The Root for the quad tree. This Node will create the first branches of the entire sphere.
     /// </summary>
-    public class QuadTreeRootNode : MonoBehaviour
+    internal class TreeRoot : MonoBehaviour
     {
         void Update()
         {
             // Update all child roots only. This way branches that should update, update.
             foreach (Transform child in transform)
             {
-                child.GetComponent<QuadTreeBranchNode>().UpdateQuadTree();
+                child.GetComponent<Branch>().UpdateQuadTree();
             }
         }
 
         /// <summary>
         /// Creates a branch for every side of a cube.
         /// </summary>
-        public void CreateQuadTree()
+        internal void CreateRootBranches()
         {
             Planet planet = GetComponentInParent<Planet>();
             for (int i = 0; i < 6; i++)
@@ -66,7 +66,17 @@ namespace PlanetEngine
                         side = CubeSides.RIGHT;
                         break;
                 }
-                rootBranchObject.AddComponent<QuadTreeBranchNode>().CreateBranch(side);
+                rootBranchObject.AddComponent<Branch>().CreateBranch(side);
+            }
+        }
+    
+        /// <summary>
+        /// Destroys the root branches and all branches under them.
+        /// </summary>
+        internal void RemoveRootBranches() {
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Destroy(transform.GetChild(i).gameObject);
             }
         }
     }

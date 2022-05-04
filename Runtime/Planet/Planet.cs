@@ -6,10 +6,10 @@ namespace PlanetEngine
     /// <summary>
     /// A component that manages the in game planet/terrain engine. It assumes the planet properties do not change.
     /// </summary>
-    public class Planet : MonoBehaviour
+    public class Planet : BasePlanet
     {
         // The target for rendering the quad tree
-        public Transform Target
+        internal Transform Target
         {
             get
             {
@@ -19,34 +19,15 @@ namespace PlanetEngine
             set { _target = value; }
         }
         Transform _target;
+        
+        // Is a terrain or the quad tree/LOD.
+        bool _terrainMode = false;
 
-        // Holds all data conserning the planet generation process.
-        public PlanetData Data
+        private void Start()
         {
-            get
-            {
-                if (_data == null)
-                {
-                    _data = ScriptableObject.CreateInstance<PlanetData>();
-                    try
-                    {
-                        _data.LoadData(name);
-                    }
-                    catch (System.Exception)
-                    {
-                        Debug.LogWarning("No data file exists for this planet, new one is created.");
-                    }
-                }
-                return _data;
-            }
-            set
-            {
-                _data = value;
-                CreateNewPlanet();
-            }
-
+            Vector3 vector = GetClosestPointToSurface(Target.position);
+            Debug.DrawLine(transform.position, vector, Color.red, Mathf.Infinity);
         }
-        PlanetData _data;
 
         /// <summary>
         /// Destroys previous generated planet and generates a new one instead.
@@ -58,8 +39,6 @@ namespace PlanetEngine
             int childCount = transform.childCount;
             for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
 
-            // if no data was loaded create new data. 
-            if (_data == null) _data = ScriptableObject.CreateInstance<PlanetData>();
             CreatePlanetFromData();
         }
 
@@ -71,8 +50,7 @@ namespace PlanetEngine
         public void CreateNewPlanet(int seed)
         {
             // Create new data and set seed.
-            _data = ScriptableObject.CreateInstance<PlanetData>();
-            _data.Seed = seed;
+            Data.Seed = seed;
             CreateNewPlanet();
         }
 
@@ -83,8 +61,36 @@ namespace PlanetEngine
         /// <param name="data">A struct containing generation properties for the planet.</param>
         public void CreateNewPlanet(PlanetData data)
         {
-            _data = data;
+            Data = data;
             CreateNewPlanet();
+        }
+
+        public Vector3 GetClosestPointToSurface(Vector3 position)
+        {
+            Vector3 planetToTargetDirection = (position - transform.position).normalized;
+            Vector3 localVertex = planetToTargetDirection * Data.Radius;
+            Mesh mesh = new Mesh();
+            mesh.vertices = new Vector3[] { localVertex };
+            mesh = MeshModifier.ApplyHeightmap(mesh, Data, transform.position, transform);
+            localVertex = mesh.vertices[0];
+            return transform.TransformPoint(localVertex); 
+        }
+
+        internal void SwitchToTerrain() {
+            if(_terrainMode) return;
+            _terrainMode = true;
+            GetComponentInChildren<PlanetTerrain>().CreateTerrain();
+            GetComponentInChildren<TreeRoot>().RemoveRootBranches();
+        }
+
+        internal void SwitchToTree()
+        {
+            if (!_terrainMode) return;
+            _terrainMode = false;
+            TreeRoot tree = GetComponentInChildren<TreeRoot>();
+            PlanetTerrain terrain = GetComponentInChildren<PlanetTerrain>();
+            tree.CreateRootBranches();
+            terrain.DestroyTerrain();
         }
 
         // Creates LOD spheres and root of the quad tree.
@@ -93,6 +99,7 @@ namespace PlanetEngine
             List<Transform> LevelsOfDetail = new List<Transform>();
             CreateSingleMeshObjects(LevelsOfDetail);
             CreateQuadTreeObject(LevelsOfDetail);
+            CreateTerrainObject();
             LevelsOfDetail.Reverse();
             ConfigureLOD(LevelsOfDetail);
         }
@@ -100,12 +107,12 @@ namespace PlanetEngine
         // Creates LOD spheres as child objects.
         void CreateSingleMeshObjects(List<Transform> LODlist)
         {
-            for (int i = 0; i < _data.LODSphereCount; i++)
+            for (int i = 0; i < Data.LODSphereCount; i++)
             {
                 GameObject singleMeshObject = new GameObject(gameObject.name + " - LODSphere: " + i);
                 singleMeshObject.tag = "PlanetEngine";
                 singleMeshObject.transform.SetParent(transform);
-                singleMeshObject.AddComponent<SingleMeshNode>().Create(2 * i + 1, 256 * (int)Mathf.Pow(2, i), _data);
+                singleMeshObject.AddComponent<PlanetMesh>().Create(2 * i + 1, 256 * (int)Mathf.Pow(2, i));
                 LODlist.Add(singleMeshObject.transform);
             }
         }
@@ -116,8 +123,17 @@ namespace PlanetEngine
             GameObject quadRootObject = new GameObject(gameObject.name + " - QuadRoot");
             quadRootObject.tag = "PlanetEngine";
             quadRootObject.transform.SetParent(transform);
-            quadRootObject.AddComponent<QuadTreeRootNode>().CreateQuadTree();
+            quadRootObject.AddComponent<TreeRoot>().CreateRootBranches();
             LODlist.Add(quadRootObject.transform);
+        }
+
+        // Creates a terrain object as child object. It is not part of the LOD system.
+        void CreateTerrainObject()
+        {
+            GameObject terrainObject = new GameObject(gameObject.name + " - Terrain");
+            terrainObject.tag = "PlanetEngine";
+            terrainObject.transform.SetParent(transform);
+            terrainObject.AddComponent<PlanetTerrain>();
         }
 
         // Adds meshes of the LOD spheres and quad tree to the LOD component.

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace PlanetEngine
         /// <summary> Seed for noise generation. </summary>
         public int Seed = 0;
         /// <summary> The radius of the planet. </summary>
-        public float Radius = 10f;
+        public float Radius = 10000f;
 
         // Heightmap
         /// <summary> The size of the highest level noise. </summary>
@@ -58,11 +59,12 @@ namespace PlanetEngine
         /// <summary> TEMP color of terrain. x=heat, y=humidity </summary>
         [NonSerialized]
         public Gradient2D biomeGradient;
+        // Vegetation
         #endregion
 
         #region Rendering Properties
         /// <summary> The amount of subdivisions of the quad tree before max depht. </summary>
-        public int MaxDepth = 12;
+        public int MaxDepth = 5;
         /// <summary> The amount of LOD versions of the planet. </summary>
         public int LODSphereCount = 3;
         #endregion
@@ -110,6 +112,64 @@ namespace PlanetEngine
             {
                 throw new FileNotFoundException();
             }
+        }
+
+        public void Randomize() {
+            RandomizeCelestialProperties();
+            RandomizeHeightMapProperties();
+            RandomizeClimateProperties();
+            RandomizeBiomeProperties();
+        }
+
+        public void RandomizeCelestialProperties()
+        {
+            Radius = UnityEngine.Random.Range(1000f, 100000f);
+        }
+
+        public void RandomizeHeightMapProperties()
+        {
+            Seed = UnityEngine.Random.Range(1, 1000);
+            ContinentScale = UnityEngine.Random.Range(0.1f, 5f);
+            heightDifference = UnityEngine.Random.Range(0f, 1f);
+            HasOcean = UnityEngine.Random.Range(0, 2) == 0;
+            OceanGradient = CreateInstance<Gradient2D>();
+            List<GradientPoint> points = new List<GradientPoint>();
+            for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
+            {
+                Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.8f, 1, 0.8f, 1f, 1f, 1f);
+                Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
+                float randWeight = UnityEngine.Random.Range(0, 5f);
+                points.Add(new GradientPoint(randColor, randVec, randWeight));
+            }
+            OceanGradient.Points = points;
+            OceanGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
+            OceanReflectiveness = UnityEngine.Random.Range(0.5f, 1f);
+        }
+
+        public void RandomizeClimateProperties()
+        {
+            SolarHeat = UnityEngine.Random.Range(0f, 1f);
+            HeightCooling = UnityEngine.Random.Range(0f, 1f);
+            HumidityTransfer = UnityEngine.Random.Range(0f, 1f);
+            HasAtmosphere = UnityEngine.Random.Range(0, 2) == 0;
+            AtmosphereColor = UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 0f, 0.2f);
+            HasClouds = UnityEngine.Random.Range(0, 2) == 0;
+            CloudDensity = UnityEngine.Random.Range(0f, 1f);
+        }
+
+        public void RandomizeBiomeProperties()
+        {
+            biomeGradient = CreateInstance<Gradient2D>();
+            List<GradientPoint> points = new List<GradientPoint>();
+            for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
+            {
+                Color randColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.5f, 1, 0.5f, 1f, 1f, 1f);
+                Vector2 randVec = new Vector2(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0f, 1f));
+                float randWeight = UnityEngine.Random.Range(0, 5f);
+                points.Add(new GradientPoint(randColor, randVec, randWeight));
+            }
+            biomeGradient.Points = points;
+            biomeGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
         }
     }
 }

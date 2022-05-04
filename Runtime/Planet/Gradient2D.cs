@@ -31,7 +31,7 @@ namespace PlanetEngine
             Color[] colors; Vector2[] positions; float[] weights;
             GetPointData(out colors, out positions, out weights);
             if (colors.Length == 0) return null;
-            TextureRenderer renderer = CreateInstance<TextureRenderer>();
+            TextureCompute renderer = CreateInstance<TextureCompute>();
             renderer.SetKernel("GenerateGradient2DTexture", ShaderType.GRADIENT);
             renderer.AddArray("point_color", colors);
             renderer.AddArray("point_position", positions);

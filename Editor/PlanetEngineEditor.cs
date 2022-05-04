@@ -9,7 +9,8 @@ using UnityEngine;
  * 
  **********************************************************************/
 namespace PlanetEngine {
-	public static class PlanetEngineEditor {
+
+	internal static class PlanetEngineEditor {
         
         [MenuItem("GameObject/3D Object/Planet", false, 40)]
 		static void AddPlanetCreatorToScene()

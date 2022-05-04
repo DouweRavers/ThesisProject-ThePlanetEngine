@@ -14,26 +14,15 @@ namespace PlanetEngine
     [ExecuteInEditMode]
     [RequireComponent(typeof(MeshRenderer))]
     [RequireComponent(typeof(MeshFilter))]
-    public class PreviewPlanet : MonoBehaviour
+    public class PreviewPlanet : BasePlanet
     {
-        public PlanetData Data = null;
         public bool PreviewSettings = true;
         public PreviewPhase Phase = PreviewPhase.BASICS;
 
         void Start()
         {
-            Data = ScriptableObject.CreateInstance<PlanetData>();
-            try
-            {
-                Data.LoadData(name);
-            }
-            catch (System.Exception)
-            {
-                Data = ScriptableObject.CreateInstance<PlanetData>();
-            }
             if (Application.isPlaying) GeneratePlanet();
             else Regenerate();
-
         }
 
         /// <summary>
@@ -41,10 +30,9 @@ namespace PlanetEngine
         /// </summary>
         public void GeneratePlanet()
         {
-            PlanetData data = Data;
             GameObject generatedPlanetObject = new GameObject(name);
             generatedPlanetObject.tag = "PlanetEngine";
-            generatedPlanetObject.AddComponent<Planet>().CreateNewPlanet(data);
+            generatedPlanetObject.AddComponent<Planet>().CreateNewPlanet(Data);
             generatedPlanetObject.transform.parent = transform.parent;
             generatedPlanetObject.transform.position = transform.position;
             Destroy(gameObject);
@@ -62,17 +50,18 @@ namespace PlanetEngine
         // Creates a preview mesh according to current phase. If preview settings is disabled it will generate for the last phase.
         void GeneratePreview()
         {
-            GetComponent<MeshFilter>().mesh = ProceduralMesh.GetPlanetMesh(Data);
+            
+            GetComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(this);
             PreviewPhase phase = PreviewSettings ? Phase : PreviewPhase.NONE;
-            GetComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetPhasedMaterial(Data, phase: phase, textureSize: 1024);
+            GetComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetMaterial(Data, phase: phase, textureSize: 1024);
             if ((!PreviewSettings || PreviewPhase.CLIMATE <= Phase) && Data.HasAtmosphere)
             {
                 GameObject Atmosphere = new GameObject("Atmosphere");
                 Atmosphere.tag = "PlanetEngine";
                 Atmosphere.transform.SetParent(transform);
                 Atmosphere.transform.localScale = Vector3.one * 1.1f;
-                Atmosphere.AddComponent<MeshFilter>().mesh = ProceduralMesh.GetPlanetMesh(Data);
-                Atmosphere.AddComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GenerateAtmosphereMaterial(Data);
+                Atmosphere.AddComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(this);
+                Atmosphere.AddComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetAtmosphereMaterial(Data);
                 Atmosphere.hideFlags = HideFlags.HideInHierarchy;
             }
         }

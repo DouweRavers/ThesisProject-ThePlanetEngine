@@ -1,3 +1,5 @@
+#include "../ShaderLib/ProceduralLib.cginc"
+
 #pragma enable_d3d11_debug_symbols
 #pragma kernel GenerateHeightmapColorTexture
 #pragma kernel GenerateHeatmapColorTexture
@@ -31,13 +33,12 @@ RWTexture2D<float4> color_texture_out;
 [numthreads(1, 1, 1)]
 void GenerateHeightmapColorTexture(uint3 id : SV_DispatchThreadID)
 {
-    float locational_heat = 1 - abs(base_texture[id.xy].y);
-    float altitude_heat = clamp(1 - height_texture[id.xy], 0, 1);
-    float heat = pow(locational_heat, 2 * (1 - solar_heat)) * pow(altitude_heat, height_cooling);
-    float depth = clamp(1 + height_texture[id.xy], 0, 1);
-    float4 color = gradient_ocean_texture[uint2(heat * width, depth * height)];
     if (height_texture[id.xy] < 0 && has_ocean)
     {
+        float heat = CalculateHeatValue(base_texture[id.xy].xyz, height_texture[id.xy], 
+            solar_heat, height_cooling, has_ocean);
+        float depth = clamp(-height_texture[id.xy], 0, 1);
+        float4 color = gradient_ocean_texture[uint2(heat * width, depth * height)];
         color_texture_out[id.xy] = color;
     }
     else
@@ -79,8 +80,8 @@ void GenerateBiomeColorTexture(uint3 id : SV_DispatchThreadID)
     float4 color;
     if (has_ocean && height_texture[id.xy] < 0)
     {
-        float heightValue = 1 + height_texture[id.xy];
-        color = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, heightValue * height)];
+        float height_value = clamp(1 + height_texture[id.xy], 0, 1);
+        color = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, height_value * height)];
     }
     else
     {
@@ -93,7 +94,8 @@ void GenerateBiomeColorTexture(uint3 id : SV_DispatchThreadID)
 [numthreads(1, 1, 1)]
 void GenerateOceanColorTexture(uint3 id : SV_DispatchThreadID)
 {
-    color_texture_out[id.xy] = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, (1 + height_texture[id.xy]) * height)];
+    float height_value = clamp(1 + height_texture[id.xy], 0, 1);
+    color_texture_out[id.xy] = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, height_value * height)];
 }
 
 
