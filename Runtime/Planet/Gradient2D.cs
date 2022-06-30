@@ -1,15 +1,19 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 
 namespace PlanetEngine
 {
+    /// <summary>
+    /// A gradient point contains data a color, position and weight.
+    /// The total gradient texture is a interpolation between these points.
+    /// </summary>
     [Serializable]
     public struct GradientPoint
     {
-        public Color Color;
-        public Vector2 Position;
-        public float Weight;
+        public Color Color { get; set; }
+        public Vector2 Position { get; set; }
+        public float Weight { get; set; }
 
         public GradientPoint(Color color, Vector2 position, float weight)
         {
@@ -23,9 +27,26 @@ namespace PlanetEngine
     [Serializable]
     public class Gradient2D : ScriptableObject
     {
-        public float Smooth = 1f;
-        public List<GradientPoint> Points;
+        /// <summary>
+        /// This value determines how much colors are blend with 0 being totally seperate and 1 one combined color.
+        /// </summary>
+        public float Smooth { get; set; } = 1f;
 
+        /// <summary>
+        /// This list holds all data points of the gradient.
+        /// </summary>
+        public List<GradientPoint> Points { get; set; }
+
+        private void Awake()
+        {
+            Points = new List<GradientPoint>();
+            Points.Add(new GradientPoint(Color.black, Vector2.one * 0.5f, 1f));
+        }
+
+        /// <summary>
+        /// Generate a texture of given size of this gradient.
+        /// </summary>
+        /// <returns>A texture of the gradient</returns>
         public Texture2D GetTexture(int width, int height)
         {
             Color[] colors; Vector2[] positions; float[] weights;
@@ -41,8 +62,10 @@ namespace PlanetEngine
             renderer.OutputTextureProperties("gradient_texture_out", width, height);
             return renderer.GetOutputTexture();
         }
-
-        public void GetPointData(out Color[] colors, out Vector2[] positions, out float[] weights)
+        /// <summary>
+        /// Splits the point data into seperate arrays.
+        /// </summary>
+        private void GetPointData(out Color[] colors, out Vector2[] positions, out float[] weights)
         {
             colors = new Color[Points.Count];
             positions = new Vector2[Points.Count];
@@ -55,12 +78,5 @@ namespace PlanetEngine
                 weights[i] = Points[i].Weight;
             }
         }
-
-        void Awake()
-        {
-            Points = new List<GradientPoint>();
-            Points.Add(new GradientPoint(Color.black, Vector2.one * 0.5f, 1f));
-        }
-
     }
 }

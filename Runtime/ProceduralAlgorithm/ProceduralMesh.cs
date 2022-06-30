@@ -58,6 +58,6 @@ namespace PlanetEngine
             mesh.Optimize();
             mesh.RecalculateBounds();
             return mesh;
-        }    
+        }
     }
 }

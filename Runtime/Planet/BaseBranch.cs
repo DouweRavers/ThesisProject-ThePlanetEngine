@@ -13,6 +13,6 @@ namespace PlanetEngine
         /// The visibility of a branch enables or disables the renderer of the branch.
         /// It is used when a branch is split up in smaller branches.
         /// </summary>
-        internal abstract bool Visible { get; set; }
+        public abstract bool Visible { get; set; }
     }
 }

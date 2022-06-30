@@ -8,8 +8,10 @@ namespace PlanetEngine
     /// </summary>
     public class Planet : BasePlanet
     {
-        // The target for rendering the quad tree
-        internal Transform Target
+        /// <summary>
+        /// The target for rendering the quad tree
+        /// </summary>
+        public Transform Target
         {
             get
             {
@@ -19,8 +21,10 @@ namespace PlanetEngine
             set { _target = value; }
         }
         Transform _target;
-        
-        // Is a terrain or the quad tree/LOD.
+
+        /// <summary>
+        /// Is a terrain or the quad tree/LOD.
+        /// </summary>
         bool _terrainMode = false;
 
         private void Start()
@@ -65,6 +69,9 @@ namespace PlanetEngine
             CreateNewPlanet();
         }
 
+        /// <summary>
+        /// Takes a vector in 3D space and returns the closest point on the terrain surface to that point.
+        /// </summary>
         public Vector3 GetClosestPointToSurface(Vector3 position)
         {
             Vector3 planetToTargetDirection = (position - transform.position).normalized;
@@ -73,17 +80,24 @@ namespace PlanetEngine
             mesh.vertices = new Vector3[] { localVertex };
             mesh = MeshModifier.ApplyHeightmap(mesh, Data, transform.position, transform);
             localVertex = mesh.vertices[0];
-            return transform.TransformPoint(localVertex); 
+            return transform.TransformPoint(localVertex);
         }
 
-        internal void SwitchToTerrain() {
-            if(_terrainMode) return;
+        /// <summary>
+        /// The planet goes from tree/LOD rendering to terrain rendering.
+        /// </summary>
+        public void SwitchToTerrain()
+        {
+            if (_terrainMode) return;
             _terrainMode = true;
             GetComponentInChildren<PlanetTerrain>().CreateTerrain();
             GetComponentInChildren<TreeRoot>().RemoveRootBranches();
         }
 
-        internal void SwitchToTree()
+        /// <summary>
+        /// The planet goes from terrain rendering to tree/LOD rendering.
+        /// </summary>
+        public void SwitchToTree()
         {
             if (!_terrainMode) return;
             _terrainMode = false;
@@ -93,8 +107,10 @@ namespace PlanetEngine
             terrain.DestroyTerrain();
         }
 
-        // Creates LOD spheres and root of the quad tree.
-        void CreatePlanetFromData()
+        /// <summary>
+        /// Creates LOD spheres and root of the quad tree.
+        /// </summary>
+        private void CreatePlanetFromData()
         {
             List<Transform> LevelsOfDetail = new List<Transform>();
             CreateSingleMeshObjects(LevelsOfDetail);
@@ -104,8 +120,10 @@ namespace PlanetEngine
             ConfigureLOD(LevelsOfDetail);
         }
 
-        // Creates LOD spheres as child objects.
-        void CreateSingleMeshObjects(List<Transform> LODlist)
+        /// <summary>
+        /// Creates LOD spheres as child objects.
+        /// </summary>
+        private void CreateSingleMeshObjects(List<Transform> LODlist)
         {
             for (int i = 0; i < Data.LODSphereCount; i++)
             {
@@ -117,8 +135,10 @@ namespace PlanetEngine
             }
         }
 
-        // Creates the root of the quad tree as child object.
-        void CreateQuadTreeObject(List<Transform> LODlist)
+        /// <summary>
+        /// Creates the root of the quad tree as child object.
+        /// </summary>
+        private void CreateQuadTreeObject(List<Transform> LODlist)
         {
             GameObject quadRootObject = new GameObject(gameObject.name + " - QuadRoot");
             quadRootObject.tag = "PlanetEngine";
@@ -127,8 +147,10 @@ namespace PlanetEngine
             LODlist.Add(quadRootObject.transform);
         }
 
-        // Creates a terrain object as child object. It is not part of the LOD system.
-        void CreateTerrainObject()
+        /// <summary>
+        /// Creates a terrain object as child object. It is not part of the LOD system.
+        /// </summary>
+        private void CreateTerrainObject()
         {
             GameObject terrainObject = new GameObject(gameObject.name + " - Terrain");
             terrainObject.tag = "PlanetEngine";
@@ -136,8 +158,10 @@ namespace PlanetEngine
             terrainObject.AddComponent<PlanetTerrain>();
         }
 
-        // Adds meshes of the LOD spheres and quad tree to the LOD component.
-        void ConfigureLOD(List<Transform> LODlist)
+        /// <summary>
+        /// Adds meshes of the LOD spheres and quad tree to the LOD component.
+        /// </summary>
+        private void ConfigureLOD(List<Transform> LODlist)
         {
             LOD[] lodArray = new LOD[LODlist.Count];
             for (int i = 0; i < LODlist.Count; i++)

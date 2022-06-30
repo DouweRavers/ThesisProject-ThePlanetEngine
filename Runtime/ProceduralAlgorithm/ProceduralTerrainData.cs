@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.Collections;
 using UnityEngine;
 
 namespace PlanetEngine
@@ -15,7 +14,7 @@ namespace PlanetEngine
             {
                 int x = i % baseTexture.width;
                 int y = i / baseTexture.width;
-                heightArray[x, y] = 0.5f+buffer[i]/2;
+                heightArray[x, y] = 0.5f + buffer[i] / 2;
             }
             return heightArray;
         }

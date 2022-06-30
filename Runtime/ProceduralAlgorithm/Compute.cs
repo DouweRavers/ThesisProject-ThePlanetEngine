@@ -7,70 +7,103 @@ namespace PlanetEngine
 {
     internal abstract class Compute : ScriptableObject
     {
-        protected int _kernelId = -1;
-        protected ComputeShader _shader;
+        /// <summary>
+        /// The id of the kernel used by this compute interface.
+        /// </summary>
+        protected int KernelId { get; set; } = -1;
 
-        // A list containing all buffers that will have to be terminated after the shader has run.
-        protected List<ComputeBuffer> _buffers = new List<ComputeBuffer>();
+        /// <summary>
+        /// A refernece to the shader used.
+        /// </summary>
+        protected ComputeShader Shader { get; set; }
 
-        internal void SetKernel(string kernelName)
+        /// <summary>
+        /// A list containing all buffers that will have to be terminated after the shader has run.
+        /// </summary>
+        protected List<ComputeBuffer> Buffers { get; set; } = new List<ComputeBuffer>();
+
+        void OnDestroy() { ClearMemory(); }
+
+        /// <summary>
+        /// Searches for the kernel with given name.
+        /// </summary>
+        public void SetKernel(string kernelName)
         {
-            _kernelId = _shader.FindKernel(kernelName);
+            KernelId = Shader.FindKernel(kernelName);
         }
 
-        internal void AddValue<T>(string name, T value)
+        /// <summary>
+        /// Adds a value to the shader.
+        /// </summary>
+        /// <typeparam name="T">The type of the value</typeparam>
+        /// <param name="name">The name of the value in the shader</param>
+        /// <param name="value">the value itself.</param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void AddValue<T>(string name, T value)
         {
             switch (value)
             {
                 case int i:
-                    _shader.SetInt(name, i);
+                    Shader.SetInt(name, i);
                     break;
                 case float f:
-                    _shader.SetFloat(name, f);
+                    Shader.SetFloat(name, f);
                     break;
                 case bool b:
-                    _shader.SetBool(name, b);
+                    Shader.SetBool(name, b);
                     break;
                 case int[] ari:
-                    _shader.SetInts(name, ari);
+                    Shader.SetInts(name, ari);
                     break;
                 case float[] arf:
-                    _shader.SetFloats(name, arf);
+                    Shader.SetFloats(name, arf);
                     break;
                 case Vector2 vector2:
                     float[] float2 = new float[] { vector2.x, vector2.y };
-                    _shader.SetFloats(name, float2);
+                    Shader.SetFloats(name, float2);
                     break;
                 case Vector3 vector3:
                     float[] float3 = new float[] { vector3.x, vector3.y, vector3.z };
-                    _shader.SetFloats(name, float3);
+                    Shader.SetFloats(name, float3);
                     break;
                 case Matrix4x4 matrix:
-                    _shader.SetMatrix(name, matrix);
+                    Shader.SetMatrix(name, matrix);
                     break;
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        internal void AddArray<T>(string name, T[] array)
+        /// <summary>
+        /// Adds an array to the shader.
+        /// </summary>
+        /// <typeparam name="T">The type of the array</typeparam>
+        /// <param name="name">The name of the array in the shader</param>
+        /// <param name="array">the array itself.</param>
+        public void AddArray<T>(string name, T[] array)
         {
             ComputeBuffer buffer = new ComputeBuffer(array.Length, Marshal.SizeOf(array[0]));
             buffer.SetData(array);
-            _shader.SetBuffer(_kernelId, name, buffer);
-            _buffers.Add(buffer);
+            Shader.SetBuffer(KernelId, name, buffer);
+            Buffers.Add(buffer);
         }
 
-        internal void AddTexture(string name, Texture2D texture)
+        /// <summary>
+        /// Adds an texture to the shader.
+        /// </summary>
+        /// <param name="name">The name of the texture in the shader</param>
+        /// <param name="texture">the texture itself.</param>
+        public void AddTexture(string name, Texture2D texture)
         {
-            _shader.SetTexture(_kernelId, name, texture);
+            Shader.SetTexture(KernelId, name, texture);
         }
 
-        void OnDestroy() { ClearMemory(); }
-
+        /// <summary>
+        /// Clears all memory in shader.
+        /// </summary>
         protected void ClearMemory()
         {
-            foreach (ComputeBuffer buffer in _buffers)
+            foreach (ComputeBuffer buffer in Buffers)
             {
                 buffer.Release();
             }

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace PlanetEngine
@@ -187,7 +186,8 @@ namespace PlanetEngine
             return generator.GetOutputTexture();
         }
 
-        internal static Texture2D GetNormalTexture(Texture2D heightTexture, PlanetData data) {
+        internal static Texture2D GetNormalTexture(Texture2D heightTexture, PlanetData data)
+        {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateNormalTexture", ShaderType.EFFECT);
             generator.AddTexture("height_texture", heightTexture);

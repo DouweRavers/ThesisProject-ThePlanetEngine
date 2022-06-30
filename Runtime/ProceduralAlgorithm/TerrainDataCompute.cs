@@ -11,13 +11,13 @@ namespace PlanetEngine
 
         internal new void SetKernel(string kernelName)
         {
-            _shader = Resources.Load<ComputeShader>("TerrainDataShaders/TerrainDataShader");
+            Shader = Resources.Load<ComputeShader>("TerrainDataShaders/TerrainDataShader");
             base.SetKernel(kernelName);
         }
 
         internal void SetInputArray2D<T>(T[,] array2D)
         {
-            T[] array1D = new T[array2D.GetLength(0)*array2D.GetLength(1)];
+            T[] array1D = new T[array2D.GetLength(0) * array2D.GetLength(1)];
             for (int i = 0; i < array1D.Length; i++)
             {
                 int x = i % array2D.GetLength(0);
@@ -34,38 +34,39 @@ namespace PlanetEngine
             this.height = height;
             this.depth = depth;
             _outputArray = new ComputeBuffer(height * width * depth, GetTypeSize(type));
-            _shader.SetBuffer(_kernelId, name, _outputArray);
+            Shader.SetBuffer(KernelId, name, _outputArray);
         }
 
         internal void SetOutputDataProperties<T>(T type, string name, int width, int height)
         {
             this.width = width;
             this.height = height;
-            _shader.SetInt("width", width);
-            _shader.SetInt("height", height);
+            Shader.SetInt("width", width);
+            Shader.SetInt("height", height);
             _outputArray = new ComputeBuffer(height * width, Marshal.SizeOf(type));
-            _shader.SetBuffer(_kernelId, name, _outputArray);
+            Shader.SetBuffer(KernelId, name, _outputArray);
         }
 
         internal void Execute()
         {
             int threads = _outputArray.count;
-            _shader.SetInt("maximum", threads);
+            Shader.SetInt("maximum", threads);
             if (60000 < threads)
             {
                 int factor = Mathf.CeilToInt(threads / 60000f);
-                _shader.SetInt("batch", factor);
+                Shader.SetInt("batch", factor);
                 threads = 60000;
             }
             else
             {
-                _shader.SetInt("batch", 1);
+                Shader.SetInt("batch", 1);
             }
-            _shader.Dispatch(_kernelId, threads, 1, 1);
+            Shader.Dispatch(KernelId, threads, 1, 1);
         }
 
 
-        internal T[] GetOutputArray<T>() {
+        internal T[] GetOutputArray<T>()
+        {
             // Run shader.
             Execute();
             T[] output = new T[_outputArray.count];
@@ -110,7 +111,8 @@ namespace PlanetEngine
             if (_outputArray != null) _outputArray.Dispose();
         }
 
-        int GetTypeSize<T>(T type) {
+        int GetTypeSize<T>(T type)
+        {
             int size = 0;
             switch (type)
             {

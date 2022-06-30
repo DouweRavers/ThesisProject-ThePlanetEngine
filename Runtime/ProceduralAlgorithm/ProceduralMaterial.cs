@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace PlanetEngine
@@ -7,7 +6,7 @@ namespace PlanetEngine
     {
         static Texture2D heightTexture, heatmapTexture, humidityTexture;
 
-        internal static Material GetMaterial(PlanetData data, Texture2D baseTexture = null, PreviewPhase phase = PreviewPhase.NONE, int textureSize = 256)
+        internal static Material GetMaterial(PlanetData data, Texture2D baseTexture = null, PreviewDesignPhase phase = PreviewDesignPhase.NONE, int textureSize = 256)
         {
             Texture2D colorTexture = null, normalTexture = null, specularTexture = null;
 
@@ -16,7 +15,7 @@ namespace PlanetEngine
             {
                 baseTexture = ProceduralTexture.GetBaseTexture(textureSize, textureSize * 3 / 4);
             }
-            if (phase == PreviewPhase.BASICS)
+            if (phase == PreviewDesignPhase.BASICS)
             {
                 colorTexture = baseTexture;
                 return GenerateMaterial(colorTexture, normalTexture, specularTexture);
@@ -26,7 +25,7 @@ namespace PlanetEngine
             Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, data);
             normalTexture = ProceduralTexture.GetNormalTexture(heightTexture, data);
             if (data.HasOcean) specularTexture = ProceduralTexture.GetOceanReflectiveTexture(heightTexture, data);
-            if (phase == PreviewPhase.HEIGHTMAP)
+            if (phase == PreviewDesignPhase.HEIGHTMAP)
             {
                 colorTexture = ProceduralTexture.GetHeightTextureColored(baseTexture, heightTexture, data);
                 return GenerateMaterial(colorTexture, normalTexture, specularTexture);
@@ -36,9 +35,9 @@ namespace PlanetEngine
             Texture2D heatmapTexture = ProceduralTexture.GetHeatTexture(baseTexture, heightTexture, data);
             Texture2D humidityTexture = ProceduralTexture.GetHumidityTexture(heightTexture, data);
 
-            if (phase == PreviewPhase.CLIMATE)
+            if (phase == PreviewDesignPhase.CLIMATE)
             {
-                if (data.previewHeat) colorTexture = ProceduralTexture.GetHeatTextureColored(heatmapTexture);
+                if (data.PreviewHeat) colorTexture = ProceduralTexture.GetHeatTextureColored(heatmapTexture);
                 else colorTexture = ProceduralTexture.GetHumidityTextureColored(humidityTexture);
                 specularTexture = null;
                 return GenerateMaterial(colorTexture, normalTexture, specularTexture);
@@ -46,7 +45,7 @@ namespace PlanetEngine
 
             // Biome textures
             colorTexture = ProceduralTexture.GetBiomeTextureColored(heightTexture, heatmapTexture, humidityTexture, data);
-            if (phase == PreviewPhase.BIOMES)
+            if (phase == PreviewDesignPhase.BIOMES)
             {
                 return GenerateMaterial(colorTexture, normalTexture, specularTexture);
             }
@@ -59,7 +58,7 @@ namespace PlanetEngine
             Texture2D colorTexture = ProceduralTexture.GetGroundTextureColored(heatmapTexture, humidityTexture, data);
             return GenerateMaterial(colorTexture, null, null);
         }
-        
+
         internal static Material GetOceanMaterial(PlanetData data, Texture2D baseTexture = null, int textureSize = 256)
         {
             baseTexture = GenerateDataTextures(data, textureSize, baseTexture);

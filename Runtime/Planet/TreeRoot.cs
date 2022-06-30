@@ -19,7 +19,7 @@ namespace PlanetEngine
         /// <summary>
         /// Creates a branch for every side of a cube.
         /// </summary>
-        internal void CreateRootBranches()
+        public void CreateRootBranches()
         {
             Planet planet = GetComponentInParent<Planet>();
             for (int i = 0; i < 6; i++)
@@ -69,11 +69,12 @@ namespace PlanetEngine
                 rootBranchObject.AddComponent<Branch>().CreateBranch(side);
             }
         }
-    
+
         /// <summary>
         /// Destroys the root branches and all branches under them.
         /// </summary>
-        internal void RemoveRootBranches() {
+        public void RemoveRootBranches()
+        {
             for (int i = 0; i < transform.childCount; i++)
             {
                 Destroy(transform.GetChild(i).gameObject);

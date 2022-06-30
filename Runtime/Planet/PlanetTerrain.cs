@@ -1,18 +1,24 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PlanetEngine
 {
+    /// <summary>
+    /// This component represents a small piece of planet displayed as a terrain.
+    /// </summary>
     [RequireComponent(typeof(Terrain))]
     [RequireComponent(typeof(TerrainCollider))]
     internal class PlanetTerrain : MonoBehaviour
     {
         // TEMP: this should be part of the creator menu;
         [SerializeField]
-        GameObject tree;
+        GameObject _tree;
         [SerializeField]
-        Texture2D grass;
-        internal TerrainData Data
+        Texture2D _grass;
+
+        /// <summary>
+        /// Data used by the unity terrain system.
+        /// </summary>
+        public TerrainData TerrainData
         {
             get
             {
@@ -25,10 +31,16 @@ namespace PlanetEngine
             }
         }
 
-        // closest point on planet sphere in local space
+        /// <summary>
+        /// closest point on planet sphere in local space
+        /// </summary>
         Vector3 _closestSurfacePoint;
-        // Reference to the planet.
+
+        /// <summary>
+        /// Reference to the planet.
+        /// </summary>
         Planet _planet;
+
         private void Start()
         {
             enabled = false;
@@ -37,7 +49,7 @@ namespace PlanetEngine
         private void Update()
         {
             _planet = GetComponentInParent<Planet>();
-            float terrainHeight = Data.size.y;
+            float terrainHeight = TerrainData.size.y;
             float specificTerrainHeight = GetComponent<Terrain>().SampleHeight(_planet.Target.position);
             float heightAboveTerrain = (_planet.Target.position.y - transform.position.y) - specificTerrainHeight;
 
@@ -47,7 +59,10 @@ namespace PlanetEngine
             }
         }
 
-        internal void CreateTerrain()
+        /// <summary>
+        /// Generates a terrain using the planet data.
+        /// </summary>
+        public void CreateTerrain()
         {
             _planet = GetComponentInParent<Planet>();
             _closestSurfacePoint = _planet.transform.InverseTransformPoint(_planet.GetClosestPointToSurface(_planet.Target.position));
@@ -57,20 +72,28 @@ namespace PlanetEngine
             enabled = true;
         }
 
-        internal void DestroyTerrain()
+        /// <summary>
+        /// Clears the planet data.
+        /// </summary>
+        public void DestroyTerrain()
         {
             enabled = false;
-            Data = null;
+            TerrainData = null;
         }
 
-
-        void PositionTerrain()
+        /// <summary>
+        /// Places the terrain at the right position.
+        /// </summary>
+        private void PositionTerrain()
         {
-            transform.position = _planet.transform.TransformPoint(_closestSurfacePoint - Data.size / 2);
+            transform.position = _planet.transform.TransformPoint(_closestSurfacePoint - TerrainData.size / 2);
             // TODO: Offer an way to rotate the player so the change in terrain isn't noticed.
         }
 
-        void GenerateTerrainData()
+        /// <summary>
+        /// Generates the terrain data from the planet data.
+        /// </summary>
+        private void GenerateTerrainData()
         {
             int resolution = 513;
             Vector3[] cornerPoints = GetCornerPoints(true);
@@ -80,25 +103,29 @@ namespace PlanetEngine
             float[,,] alphaValues = ProceduralTerrainData.GenerateAlphaValues(baseValues, _planet.Data);
             TreePrototype[] treePrototypes = ProceduralTerrainData.GenerateTreePrototypes();
             DetailPrototype[] detailPrototypes = ProceduralTerrainData.GenerateDetailPrototypes();
-            TreeInstance[] treeInstances = ProceduralTerrainData.GenerateTreeInstances(resolution/10);
+            TreeInstance[] treeInstances = ProceduralTerrainData.GenerateTreeInstances(resolution / 10);
             int[,] detailInstances = ProceduralTerrainData.GenerateDetailInstances(resolution);
 
-            Data = new TerrainData();
-            Data.heightmapResolution = resolution;
-            Data.alphamapResolution = resolution;
-            Data.SetHeights(0, 0, heightValues);
-            Data.terrainLayers = layers;
-            Data.SetAlphamaps(0, 0, alphaValues);
-            Data.size = GetSizeFromCorners(cornerPoints);
-            Data.treePrototypes = treePrototypes;
-            Data.detailPrototypes = detailPrototypes;
-            Data.RefreshPrototypes();
-            Data.SetTreeInstances(treeInstances, true);
-            Data.SetDetailResolution(resolution, 1);
-            Data.SetDetailLayer(0, 0, 0, detailInstances);
+            TerrainData = new TerrainData();
+            TerrainData.heightmapResolution = resolution;
+            TerrainData.alphamapResolution = resolution;
+            TerrainData.SetHeights(0, 0, heightValues);
+            TerrainData.terrainLayers = layers;
+            TerrainData.SetAlphamaps(0, 0, alphaValues);
+            TerrainData.size = GetSizeFromCorners(cornerPoints);
+            TerrainData.treePrototypes = treePrototypes;
+            TerrainData.detailPrototypes = detailPrototypes;
+            TerrainData.RefreshPrototypes();
+            TerrainData.SetTreeInstances(treeInstances, true);
+            TerrainData.SetDetailResolution(resolution, 1);
+            TerrainData.SetDetailLayer(0, 0, 0, detailInstances);
         }
 
-        Vector3[] GetCornerPoints(bool debugLines = false)
+        /// <summary>
+        /// Generates 4 points that form a square on the surface on the surface (not heightened). 
+        /// </summary>
+        /// <param name="debugLines">for debugging a the points can be splayed in respect to the center of the planet.</param>
+        private Vector3[] GetCornerPoints(bool debugLines = false)
         {
             Vector3 shiftedVector = _closestSurfacePoint + Vector3.one;
             Vector3[] cornerPoints = new Vector3[4];
@@ -126,7 +153,11 @@ namespace PlanetEngine
             return cornerPoints;
         }
 
-        Vector3 GetSizeFromCorners(Vector3[] cornerPoints)
+        /// <summary>
+        /// Based on the corner points the size of the square on the surface is measured.
+        /// </summary>
+        /// <returns>A vector with the (width, height, width/3=depth)</returns>
+        private Vector3 GetSizeFromCorners(Vector3[] cornerPoints)
         {
             Vector3 size = Vector3.zero;
             size.x = _planet.Data.Radius * (cornerPoints[1] - cornerPoints[0]).magnitude;

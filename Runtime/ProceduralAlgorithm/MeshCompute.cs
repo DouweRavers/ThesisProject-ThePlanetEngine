@@ -1,52 +1,71 @@
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace PlanetEngine
 {
+    /// <summary>
+    /// This mesh compute interface exposes the functionality of the mesh shader.
+    /// </summary>
     internal class MeshCompute : Compute
     {
         ComputeBuffer _inputMeshVertices, _inputMeshIndexes, _inputMeshUVs;
         ComputeBuffer _outputMeshVertices, _outputMeshIndexes, _outputMeshUVs;
-        internal new void SetKernel(string kernelName) {
-            _shader = Resources.Load<ComputeShader>("MeshShaders/MeshShader");
+
+        public new void SetKernel(string kernelName)
+        {
+            Shader = Resources.Load<ComputeShader>("MeshShaders/MeshShader");
             base.SetKernel(kernelName);
         }
 
-        internal void SetInputMesh(Vector3[] vertices = null, int[] indexes = null, Vector2[] uvs = null)
+        /// <summary>
+        /// Adds array mesh to shader
+        /// </summary>
+        /// <param name="vertices">vertices of the mesh</param>
+        /// <param name="indexes">indexes of the mesh</param>
+        /// <param name="uvs">uvs of the mesh</param>
+        public void SetInputMesh(Vector3[] vertices = null, int[] indexes = null, Vector2[] uvs = null)
         {
             // Create vertice buffer and assign to shader.
             if (vertices != null)
             {
                 _inputMeshVertices = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
                 _inputMeshVertices.SetData(vertices);
-                _shader.SetBuffer(_kernelId, "input_vertice_array", _inputMeshVertices);
+                Shader.SetBuffer(KernelId, "input_vertice_array", _inputMeshVertices);
             }
             // Create index buffer and assign to shader.
             if (indexes != null)
             {
                 _inputMeshIndexes = new ComputeBuffer(indexes.Length, sizeof(int));
                 _inputMeshIndexes.SetData(indexes);
-                _shader.SetBuffer(_kernelId, "input_index_array", _inputMeshIndexes);
+                Shader.SetBuffer(KernelId, "input_index_array", _inputMeshIndexes);
             }
             // Create uvv buffer and assign to shader.
             if (uvs != null)
             {
                 _inputMeshUVs = new ComputeBuffer(uvs.Length, sizeof(float) * 2);
                 _inputMeshUVs.SetData(uvs);
-                _shader.SetBuffer(_kernelId, "input_uv_array", _inputMeshUVs);
+                Shader.SetBuffer(KernelId, "input_uv_array", _inputMeshUVs);
             }
         }
 
-        internal void SetInputMesh(Mesh mesh)
+        /// <summary>
+        /// Adds mesh to shader by splitting it up in seperate arrays/buffers.
+        /// </summary>
+        /// <param name="mesh">the mesh to be added</param>
+        public void SetInputMesh(Mesh mesh)
         {
             SetInputMesh(mesh.vertices, mesh.triangles, mesh.uv);
         }
 
-        // TODO: make compatible with not all arrays active.
-        internal void SetOutputMeshAsInput(int vertexSize = 0, int indexSize = 0)
+        /// <summary>
+        /// Takes the mesh from the output and inserts it as input.
+        /// Only possible if shader runs multiple times.
+        /// Allows for reusing buffers instead of recreating them.
+        /// </summary>
+        /// <param name="vertexSize">The size of the new output mesh</param>
+        /// <param name="indexSize">The size of the new output indexes</param>
+        public void SetOutputMeshAsInput(int vertexSize = 0, int indexSize = 0)
         {
+            // TODO: make compatible with not all arrays active.
             // Clear old input mesh buffers.
             _inputMeshVertices.Dispose();
             _inputMeshIndexes.Dispose();
@@ -58,14 +77,19 @@ namespace PlanetEngine
             _inputMeshUVs = _outputMeshUVs;
 
             // Add buffers to shader.
-            _shader.SetBuffer(_kernelId, "input_vertice_array", _inputMeshVertices);
-            _shader.SetBuffer(_kernelId, "input_index_array", _inputMeshIndexes);
-            _shader.SetBuffer(_kernelId, "input_uv_array", _inputMeshUVs);
+            Shader.SetBuffer(KernelId, "input_vertice_array", _inputMeshVertices);
+            Shader.SetBuffer(KernelId, "input_index_array", _inputMeshIndexes);
+            Shader.SetBuffer(KernelId, "input_uv_array", _inputMeshUVs);
 
             SetOutputMeshProperties(vertexSize, indexSize);
         }
 
-        internal void SetOutputMeshProperties(int vertexSize = 0, int indexSize = 0)
+        /// <summary>
+        /// Creates buffers to receive the computed meshdata.
+        /// </summary>
+        /// <param name="vertexSize">The size of the output vertices expected</param>
+        /// <param name="indexSize">The size of the output indexes expected</param>
+        public void SetOutputMeshProperties(int vertexSize = 0, int indexSize = 0)
         {
             // If values zero set to input mesh values.
             if (vertexSize == 0 || indexSize == 0)
@@ -78,36 +102,46 @@ namespace PlanetEngine
             if (_inputMeshVertices != null)
             {
                 _outputMeshVertices = new ComputeBuffer(vertexSize, sizeof(float) * 3);
-                _shader.SetBuffer(_kernelId, "output_vertice_array", _outputMeshVertices);
+                Shader.SetBuffer(KernelId, "output_vertice_array", _outputMeshVertices);
             }
             if (_inputMeshIndexes != null)
             {
                 _outputMeshIndexes = new ComputeBuffer(indexSize, sizeof(int));
-                _shader.SetBuffer(_kernelId, "output_index_array", _outputMeshIndexes);
+                Shader.SetBuffer(KernelId, "output_index_array", _outputMeshIndexes);
             }
             if (_inputMeshUVs != null)
             {
                 _outputMeshUVs = new ComputeBuffer(vertexSize, sizeof(float) * 2);
-                _shader.SetBuffer(_kernelId, "output_uv_array", _outputMeshUVs);
+                Shader.SetBuffer(KernelId, "output_uv_array", _outputMeshUVs);
             }
         }
 
-        internal void Execute(int threads)
+        /// <summary>
+        /// This runs the shader.
+        /// </summary>
+        /// <param name="threads">The amount of parallel tasks.</param>
+        public void Execute(int threads)
         {
-            _shader.SetInt("maximum", threads);
+            Shader.SetInt("maximum", threads);
             if (60000 < threads)
             {
                 int factor = Mathf.CeilToInt(threads / 60000f);
-                _shader.SetInt("batch", factor);
+                Shader.SetInt("batch", factor);
                 threads = 60000;
             }
             else
             {
-                _shader.SetInt("batch", 1);
+                Shader.SetInt("batch", 1);
             }
-            _shader.Dispatch(_kernelId, threads, 1, 1);
+            Shader.Dispatch(KernelId, threads, 1, 1);
         }
 
+        /// <summary>
+        /// Executes the shader and returns the computed shader.
+        /// </summary>
+        /// <param name="threads">The amount of parallel tasks</param>
+        /// <param name="mesh">The target for the mesh</param>
+        /// <returns></returns>
         internal Mesh GetOutputMesh(int threads, Mesh mesh = null)
         {
             // Run shader.
@@ -139,10 +173,10 @@ namespace PlanetEngine
             return mesh;
         }
 
-        new void ClearMemory()
+        private new void ClearMemory()
         {
             base.ClearMemory();
-            if(_inputMeshVertices != null) _inputMeshVertices.Dispose();
+            if (_inputMeshVertices != null) _inputMeshVertices.Dispose();
             if (_inputMeshIndexes != null) _inputMeshIndexes.Dispose();
             if (_inputMeshUVs != null) _inputMeshUVs.Dispose();
 

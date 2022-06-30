@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace PlanetEngine
@@ -15,22 +12,22 @@ namespace PlanetEngine
             switch (shaderType)
             {
                 case ShaderType.BASE:
-                    _shader = Resources.Load<ComputeShader>("TextureShaders/BaseTextures");
+                    Shader = Resources.Load<ComputeShader>("TextureShaders/BaseTextures");
                     break;
                 case ShaderType.DATA:
-                    _shader = Resources.Load<ComputeShader>("TextureShaders/DataTextures");
+                    Shader = Resources.Load<ComputeShader>("TextureShaders/DataTextures");
                     break;
                 case ShaderType.COLOR:
-                    _shader = Resources.Load<ComputeShader>("TextureShaders/ColorTextures");
+                    Shader = Resources.Load<ComputeShader>("TextureShaders/ColorTextures");
                     break;
                 case ShaderType.EFFECT:
-                    _shader = Resources.Load<ComputeShader>("TextureShaders/EffectTextures");
+                    Shader = Resources.Load<ComputeShader>("TextureShaders/EffectTextures");
                     break;
                 case ShaderType.GRADIENT:
-                    _shader = Resources.Load<ComputeShader>("TextureShaders/Gradient2D");
+                    Shader = Resources.Load<ComputeShader>("TextureShaders/Gradient2D");
                     break;
                 case ShaderType.NONE:
-                    _shader = null;
+                    Shader = null;
                     break;
             }
             base.SetKernel(kernelName);
@@ -42,14 +39,14 @@ namespace PlanetEngine
             _outputTexture = new RenderTexture(width, height, 0, format);
             _outputTexture.enableRandomWrite = true;
             _outputTexture.Create();
-            _shader.SetTexture(_kernelId, name, _outputTexture);
-            _shader.SetInt("width", width-1);
-            _shader.SetInt("height", height-1);
+            Shader.SetTexture(KernelId, name, _outputTexture);
+            Shader.SetInt("width", width - 1);
+            Shader.SetInt("height", height - 1);
         }
 
         internal Texture2D GetOutputTexture(TextureFormat format = TextureFormat.RGBA32)
         {
-            _shader.Dispatch(_kernelId, _outputTexture.width, _outputTexture.height, 1);
+            Shader.Dispatch(KernelId, _outputTexture.width, _outputTexture.height, 1);
             Texture2D outputTexture = new Texture2D(_outputTexture.width, _outputTexture.height, format, false);
             outputTexture.filterMode = FilterMode.Bilinear;
             RenderTexture.active = _outputTexture;

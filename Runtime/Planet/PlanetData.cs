@@ -12,47 +12,50 @@ namespace PlanetEngine
     public class PlanetData : ScriptableObject
     {
         #region Preview properties
-        public bool previewHeat = true;
+        /// <summary>
+        /// An indicator for the previewplanet to determine to show heat or humidity map.
+        /// </summary>
+        public bool PreviewHeat { set; get; } = true;
         #endregion
 
         #region Procedural Properties
         // Celestial
         /// <summary> Seed for noise generation. </summary>
-        public int Seed = 0;
+        public int Seed { set; get; } = 0;
         /// <summary> The radius of the planet. </summary>
-        public float Radius = 10000f;
+        public float Radius { set; get; } = 10000f;
 
         // Heightmap
         /// <summary> The size of the highest level noise. </summary>
-        public float ContinentScale = 0.5f;
+        public float ContinentScale { set; get; } = 0.5f;
         /// <summary> The amplification of the noise. </summary>
-        public float heightDifference = 0.2f;
+        public float heightDifference { set; get; } = 0.2f;
 
         // Ocean
         /// <summary> Does the planet contain oceans? </summary>
-        public bool HasOcean = false;
+        public bool HasOcean { set; get; } = false;
         /// <summary> How reflective is the ocean material. </summary>
-        public float OceanReflectiveness = 0.7f;
+        public float OceanReflectiveness { set; get; } = 0.7f;
         /// <summary> A color gradient for the water x=Heat, y=Depth. </summary>
         [NonSerialized]
         public Gradient2D OceanGradient;
         // Climate
         /// <summary> The intesity of heat reaching the planet. </summary>
-        public float SolarHeat = 0.5f;
+        public float SolarHeat { set; get; } = 0.5f;
         /// <summary> The decrease in heat as terrain is elevated. </summary>
-        public float HeightCooling = 0.5f;
+        public float HeightCooling { set; get; } = 0.5f;
         /// <summary> The rate at which the humidity from the oceans seams landinward. </summary>
-        public float HumidityTransfer = 0.5f;
+        public float HumidityTransfer { set; get; } = 0.5f;
         // Atmosphere
         /// <summary> Does this planet has a atmosphere? </summary>
-        public bool HasAtmosphere = false;
+        public bool HasAtmosphere { set; get; } = false;
         /// <summary> Color of atmosphere. </summary>
-        public Color AtmosphereColor = new Color(1, 1, 1, 0.1f);
+        public Color AtmosphereColor { set; get; } = new Color(1, 1, 1, 0.1f);
         // Clouds
         /// <summary> Does the atmosphere has clouds? </summary>
-        public bool HasClouds = true;
+        public bool HasClouds { set; get; } = true;
         /// <summary> The amount of clouds 0f=nothing, 1f=entire atmosphere. </summary>
-        public float CloudDensity = 0.5f;
+        public float CloudDensity { set; get; } = 0.5f;
         /// <summary> The color of the clouds based on density (alpha included). </summary>
         public Gradient CloudGradient;
         // Biomes
@@ -64,17 +67,18 @@ namespace PlanetEngine
 
         #region Rendering Properties
         /// <summary> The amount of subdivisions of the quad tree before max depht. </summary>
-        public int MaxDepth = 5;
+        public int MaxDepth { set; get; } = 5;
         /// <summary> The amount of LOD versions of the planet. </summary>
-        public int LODSphereCount = 3;
+        public int LODSphereCount { set; get; } = 3;
         #endregion
 
-        void Awake()
+        private void Awake()
         {
             OceanGradient = CreateInstance<Gradient2D>();
             biomeGradient = CreateInstance<Gradient2D>();
             CloudGradient = new Gradient();
         }
+        #region IO
 
         /// <summary>
         /// Saves the class properties to a file named by the parameter and following 
@@ -113,19 +117,31 @@ namespace PlanetEngine
                 throw new FileNotFoundException();
             }
         }
+        #endregion
 
-        public void Randomize() {
+        #region Randomize
+        /// <summary>
+        /// This method randomizes all properties of the planetdata.
+        /// </summary>
+        public void Randomize()
+        {
             RandomizeCelestialProperties();
             RandomizeHeightMapProperties();
             RandomizeClimateProperties();
             RandomizeBiomeProperties();
         }
 
+        /// <summary>
+        /// This method randomizes celestial properties of the planetdata.
+        /// </summary>
         public void RandomizeCelestialProperties()
         {
             Radius = UnityEngine.Random.Range(1000f, 100000f);
         }
 
+        /// <summary>
+        /// This method randomizes heightmap properties of the planetdata.
+        /// </summary>
         public void RandomizeHeightMapProperties()
         {
             Seed = UnityEngine.Random.Range(1, 1000);
@@ -146,6 +162,9 @@ namespace PlanetEngine
             OceanReflectiveness = UnityEngine.Random.Range(0.5f, 1f);
         }
 
+        /// <summary>
+        /// This method randomizes climate properties of the planetdata.
+        /// </summary>
         public void RandomizeClimateProperties()
         {
             SolarHeat = UnityEngine.Random.Range(0f, 1f);
@@ -157,6 +176,9 @@ namespace PlanetEngine
             CloudDensity = UnityEngine.Random.Range(0f, 1f);
         }
 
+        /// <summary>
+        /// This method randomizes biome properties of the planetdata.
+        /// </summary>
         public void RandomizeBiomeProperties()
         {
             biomeGradient = CreateInstance<Gradient2D>();
@@ -171,5 +193,6 @@ namespace PlanetEngine
             biomeGradient.Points = points;
             biomeGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
         }
+        #endregion
     }
 }

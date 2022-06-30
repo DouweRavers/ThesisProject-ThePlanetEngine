@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
-   
+
     /// <summary>
     /// This abstract class defines the basics of a planet. Planets with different rendering settings can
     /// be created from this base planet. Where only the planet data is stored.
@@ -38,7 +38,6 @@ namespace PlanetEngine
             }
 
         }
-        PlanetData _data;
-
+        private PlanetData _data;
     }
 }
