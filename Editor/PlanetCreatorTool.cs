@@ -739,7 +739,9 @@ namespace PlanetEngine
             }
         }
 
-
+        /// <summary>
+        /// Displays the gradient for the biome.
+        /// </summary>
         void GenerateBiomeGradientTexture()
         {
             _biomeTexture = _planet.Data.biomeGradient.GetTexture(256, 256);
@@ -747,6 +749,9 @@ namespace PlanetEngine
             _changed = true;
         }
 
+        /// <summary>
+        /// Changes values of the planet of given phase.
+        /// </summary>
         void RandomizeProperties(PreviewDesignPhase phase)
         {
             UnityEngine.Random.InitState(Time.frameCount);

@@ -18,7 +18,7 @@ namespace PlanetEngine
         public void Create(int subdivisions, int textureSize)
         {
             Planet planet = GetComponentInParent<Planet>();
-            GetComponent<MeshFilter>().mesh = ProceduralMesh.GetPlanetMesh(planet, subdivisions);
+            GetComponent<MeshFilter>().mesh = ProceduralMesh.GetPlanetMesh(planet.Data, planet.transform, subdivisions);
             GetComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetMaterial(planet.Data, textureSize: textureSize);
         }
     }
