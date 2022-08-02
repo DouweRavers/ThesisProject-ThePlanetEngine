@@ -11,15 +11,53 @@ namespace PlanetEngine
     [Serializable]
     public struct GradientPoint
     {
-        public Color Color { get; set; }
-        public Vector2 Position { get; set; }
-        public float Weight { get; set; }
+        public Color Color;
+        public Texture2D Texture;
+        public Vector2 Position;
+        public float Weight;
 
         public GradientPoint(Color color, Vector2 position, float weight)
         {
+            Texture = null;
             Color = color;
             Position = position;
             Weight = weight;
+        }
+
+        public GradientPoint(Texture2D texture, Vector2 position, float weight)
+        {
+            Texture = texture;
+            Color = CalcAverageColorOfTexture(texture);
+            Position = position;
+            Weight = weight;
+        }
+        public void UpdateColor()
+        {
+            Color = CalcAverageColorOfTexture(Texture);
+        }
+
+        static Color CalcAverageColorOfTexture(Texture2D texture)
+        {
+            Color[] texColors = texture.GetPixels();
+
+            int total = texColors.Length;
+
+            float r = 0;
+            float g = 0;
+            float b = 0;
+
+            for (int i = 0; i < total; i++)
+            {
+
+                r += texColors[i].r;
+
+                g += texColors[i].g;
+
+                b += texColors[i].b;
+
+            }
+
+            return new Color((r / total), (g / total), (b / total), 1);
         }
     }
 
@@ -30,18 +68,12 @@ namespace PlanetEngine
         /// <summary>
         /// This value determines how much colors are blend with 0 being totally seperate and 1 one combined color.
         /// </summary>
-        public float Smooth { get; set; } = 1f;
+        public float Smooth = 1f;
 
         /// <summary>
         /// This list holds all data points of the gradient.
         /// </summary>
-        public List<GradientPoint> Points { get; set; }
-
-        private void Awake()
-        {
-            Points = new List<GradientPoint>();
-            Points.Add(new GradientPoint(Color.black, Vector2.one * 0.5f, 1f));
-        }
+        public List<GradientPoint> Points;
 
         /// <summary>
         /// Generate a texture of given size of this gradient.

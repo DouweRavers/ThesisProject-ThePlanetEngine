@@ -69,7 +69,7 @@ namespace PlanetEngine
         /// <returns>The procedurally generated material</returns>
         public static Material GetLandMaterial(PlanetData data, Texture2D baseTexture = null, int textureSize = 256)
         {
-            _ = GenerateDataTextures(data, baseTexture, textureSize );
+            _ = GenerateDataTextures(data, baseTexture, textureSize);
             Texture2D colorTexture = ProceduralTexture.GetGroundTextureColored(s_heatmapTexture, s_humidityTexture, data);
             return GenerateMaterial(colorTexture, null, null);
         }

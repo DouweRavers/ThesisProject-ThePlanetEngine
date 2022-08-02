@@ -14,21 +14,21 @@ namespace PlanetEngine
     [CustomEditor(typeof(PreviewPlanet))]
     internal class PlanetCreatorTool : Editor
     {
+        // Collection of styles used by the UI
+        public Dictionary<string, GUIStyle> Styles { get; private set; }
+
         // Used for limited updates
         static float s_lastUpdate = 0;
 
-        // reference to component
-        PreviewPlanet _planet;
-        // Collection of styles used by the UI
-        Dictionary<string, GUIStyle> _styles;
-        // Textures that are displayed in the UI
-        Texture2D _oceanTexture = null;
-        Texture2D _biomeTexture = null;
         // Indicator if values are changed
         bool _changed = false;
-        // Properties of currently selected point
-        Color _oceanGradientColor;
-        int _selectedPoint = -1;
+
+        // Gradient UIs
+        OceanGradientUI _oceanGradient;
+        BiomeGradientUI _biomeGradient;
+
+        // reference to component
+        PreviewPlanet _planet;
 
         public override void OnInspectorGUI()
         {
@@ -48,61 +48,67 @@ namespace PlanetEngine
         void Awake()
         {
             _planet = target as PreviewPlanet;
-            CreateStyles();
             _planet.GetComponent<MeshFilter>().hideFlags = HideFlags.HideInInspector;
             _planet.GetComponent<MeshRenderer>().hideFlags = HideFlags.HideInInspector;
             SceneView.lastActiveSceneView.Frame(_planet.GetComponent<MeshRenderer>().bounds, false);
+            _oceanGradient = CreateInstance<OceanGradientUI>();
+            _oceanGradient.Initialize(_planet, this);
+            _biomeGradient = CreateInstance<BiomeGradientUI>();
+            _biomeGradient.Initialize(_planet, this);
+            CreateStyles();
         }
+
+        public void UpdateUI() { _changed = true; }
 
         /// <summary>
         /// Generates a dictionary with named styles which are used by different components in the UI.
         /// </summary>
         void CreateStyles()
         {
-            _styles = new Dictionary<string, GUIStyle>();
+            Styles = new Dictionary<string, GUIStyle>();
 
             GUIStyle style = new GUIStyle();
             style.padding = new RectOffset(25, 25, 25, 25);
             style.normal.background = Resources.Load<Texture2D>("UI/BackgroundPanel");
-            _styles["BackgroundPanel"] = style;
+            Styles["BackgroundPanel"] = style;
 
             style = new GUIStyle();
             //style.padding = new RectOffset(10,10,10,10);
             style.normal.background = Texture2D.whiteTexture;
-            _styles["line"] = style;
+            Styles["line"] = style;
 
             style = new GUIStyle();
             style.normal.background = Resources.Load<Texture2D>("UI/IndicatorLocked");
-            _styles["IndicatorLocked"] = style;
+            Styles["IndicatorLocked"] = style;
             style = new GUIStyle();
             style.normal.background = Resources.Load<Texture2D>("UI/IndicatorFinished");
-            _styles["IndicatorFinished"] = style;
+            Styles["IndicatorFinished"] = style;
             style = new GUIStyle();
             style.normal.background = Resources.Load<Texture2D>("UI/IndicatorSelected");
-            _styles["IndicatorSelected"] = style;
+            Styles["IndicatorSelected"] = style;
 
             style = new GUIStyle();
             style.normal.background = Resources.Load<Texture2D>("UI/SelectOn");
-            _styles["SelectOn"] = style;
+            Styles["SelectOn"] = style;
             style = new GUIStyle();
             style.normal.background = Resources.Load<Texture2D>("UI/SelectOff");
-            _styles["SelectOff"] = style;
+            Styles["SelectOff"] = style;
 
             style = new GUIStyle();
             style.margin = new RectOffset(20, 20, 20, 20);
-            _styles["OceanTexture"] = style;
-            if (_planet.Data != null && _planet.Data.OceanGradient != null && _oceanTexture == null)
+            Styles["OceanTexture"] = style;
+            if (_planet.Data != null && _planet.Data.OceanGradient != null)
             {
-                GenerateOceanGradientTexture();
+                _oceanGradient.GenerateTexture();
                 _changed = false;
             }
 
             style = new GUIStyle();
             style.margin = new RectOffset(20, 20, 20, 20);
-            _styles["BiomeTexture"] = style;
-            if (_planet.Data != null && _planet.Data.biomeGradient != null && _biomeTexture == null)
+            Styles["BiomeTexture"] = style;
+            if (_planet.Data != null && _planet.Data.biomeGradient != null)
             {
-                GenerateBiomeGradientTexture();
+                _biomeGradient.GenerateTexture();
                 _changed = false;
             }
         }
@@ -136,7 +142,7 @@ namespace PlanetEngine
 
             GUIStyle IndicatorStyle(PreviewDesignPhase phase)
             {
-                return _planet.Phase == phase ? _styles["IndicatorSelected"] : _styles["IndicatorLocked"];
+                return _planet.Phase == phase ? Styles["IndicatorSelected"] : Styles["IndicatorLocked"];
             }
         }
 
@@ -147,7 +153,7 @@ namespace PlanetEngine
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label("", GUILayout.MaxWidth(25f));
-            GUILayout.BeginVertical(_styles["BackgroundPanel"], GUILayout.Height(250f));
+            GUILayout.BeginVertical(Styles["BackgroundPanel"], GUILayout.Height(250f));
             switch (_planet.Phase)
             {
                 case PreviewDesignPhase.BASICS:
@@ -185,13 +191,13 @@ namespace PlanetEngine
                 RandomizeProperties(PreviewDesignPhase.NONE);
             }
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(Resources.Load<Texture2D>("UI/LeftArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
+            if (_planet.Phase != PreviewDesignPhase.BASICS && GUILayout.Button(Resources.Load<Texture2D>("UI/LeftArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
             {
                 if (_planet.Phase == PreviewDesignPhase.BASICS) return;
                 _planet.Phase--;
                 _changed = true;
             }
-            if (GUILayout.Button(Resources.Load<Texture2D>(_planet.Phase == PreviewDesignPhase.VEGETATION ? "UI/Add" : "UI/RightArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
+            if (_planet.Phase != PreviewDesignPhase.VEGETATION && GUILayout.Button(Resources.Load<Texture2D>("UI/RightArrow"), GUILayout.Height(25f), GUILayout.Width(50f)))
             {
                 if (_planet.Phase != PreviewDesignPhase.VEGETATION) _planet.Phase++;
                 _changed = true;
@@ -259,7 +265,7 @@ namespace PlanetEngine
             GUILayout.Label("Oceans");
             _planet.Data.HasOcean = EditorGUILayout.Toggle(_planet.Data.HasOcean);
             GUILayout.EndHorizontal();
-            if (_planet.Data.HasOcean) ShowOceanGradient();
+            if (_planet.Data.HasOcean) _oceanGradient.OnGUI();
 
             if (seed != _planet.Data.Seed ||
                 scale != _planet.Data.ContinentScale ||
@@ -356,7 +362,7 @@ namespace PlanetEngine
         {
             ShowPanelHeader("Biomes - " + _planet.name);
 
-            ShowBiomeGradient();
+            _biomeGradient.OnGUI();
 
             ShowPanelFooter(PreviewDesignPhase.BIOMES);
         }
@@ -399,7 +405,7 @@ namespace PlanetEngine
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.Label("Preview settings");
-            if (GUILayout.Button("", _planet.PreviewCurrentPhase ? _styles["SelectOn"] : _styles["SelectOff"], GUILayout.Height(25f), GUILayout.Width(50f)))
+            if (GUILayout.Button("", _planet.PreviewCurrentPhase ? Styles["SelectOn"] : Styles["SelectOff"], GUILayout.Height(25f), GUILayout.Width(50f)))
             {
                 _planet.PreviewCurrentPhase = !_planet.PreviewCurrentPhase;
                 _changed = true;
@@ -416,337 +422,6 @@ namespace PlanetEngine
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-        }
-
-        void GenerateOceanGradientTexture()
-        {
-            _oceanTexture = _planet.Data.OceanGradient.GetTexture(256, 256);
-            _styles["OceanTexture"].normal.background = _oceanTexture;
-            _changed = true;
-        }
-
-        /// <summary>
-        /// A UI element exposing the self implemented 2D gradient.
-        /// Connected to the ocean settings.
-        /// </summary>
-        void ShowOceanGradient()
-        {
-            if (_oceanTexture == null) GenerateOceanGradientTexture();
-            GUILayout.BeginHorizontal();
-            Rect textureRect = ShowGradientField();
-            Rect pointMenuRect = ShowPointProperties();
-            HandleMouseInput(textureRect, pointMenuRect);
-
-            Rect ShowGradientField()
-            {
-                // Check for change values
-                float smooth = _planet.Data.OceanGradient.Smooth;
-                float refleciveness = _planet.Data.OceanReflectiveness;
-
-                GUILayout.BeginVertical();
-                // Title
-                GUILayout.Label("Ocean gradient");
-                GUILayout.Space(10);
-
-                // Graph
-                GUILayout.Label("Depth");
-                GUILayout.Label("", _styles["OceanTexture"], GUILayout.MinWidth(150), GUILayout.MinHeight(100));
-                Rect textureRect = GUILayoutUtility.GetLastRect();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("Temperature");
-                GUILayout.EndHorizontal();
-
-                // Smoothing Menu
-                GUILayout.Label("Gradient smoothing");
-                _planet.Data.OceanGradient.Smooth = GUILayout.HorizontalSlider(_planet.Data.OceanGradient.Smooth, 0.1f, 10f, GUILayout.Height(20));
-                GUILayout.Label("Reflection");
-                _planet.Data.OceanReflectiveness = GUILayout.HorizontalSlider(_planet.Data.OceanReflectiveness, 0.5f, 1f, GUILayout.Height(20));
-
-                if (_planet.Data.OceanGradient.Smooth != smooth || _planet.Data.OceanReflectiveness != refleciveness) GenerateOceanGradientTexture();
-
-                // Color points on graph
-                for (int i = 0; i < _planet.Data.OceanGradient.Points.Count; i++)
-                {
-                    GradientPoint point = _planet.Data.OceanGradient.Points[i];
-                    int size = i == _selectedPoint ? 30 : 20;
-                    GUI.backgroundColor = Color.Lerp(point.Color, Color.white, 0.2f);
-                    if (GUI.Button(new Rect(
-                        textureRect.x + textureRect.width * point.Position.x - size / 2,
-                        textureRect.y + textureRect.height * (1 - point.Position.y) - size / 2,
-                        size, size), "", _styles["IndicatorFinished"]))
-                    {
-                        _selectedPoint = i;
-                        _oceanGradientColor = point.Color;
-                    }
-                }
-                GUI.backgroundColor = Color.white;
-                GUILayout.EndVertical();
-
-                return textureRect;
-            }
-
-            Rect ShowPointProperties()
-            {
-                GUILayout.BeginVertical(GUILayout.MaxWidth(100), GUILayout.ExpandHeight(true));
-
-                // Title
-                GUILayout.Label("Point menu");
-                GUILayout.Space(10);
-
-                // Menu
-                if (0 <= _selectedPoint)
-                {
-                    // Check for change values
-                    GradientPoint point = _planet.Data.OceanGradient.Points[_selectedPoint];
-                    GradientPoint prevPoint = new GradientPoint(point.Color, point.Position, point.Weight);
-
-                    // Gradient point properties
-                    GUILayout.Label("Color:");
-                    _oceanGradientColor = EditorGUILayout.ColorField(_oceanGradientColor);
-                    point.Color = _oceanGradientColor;
-                    GUILayout.Label("Weight:");
-                    point.Weight = GUILayout.HorizontalSlider(point.Weight, 0, 5, GUILayout.Height(20));
-
-                    // Remove selected point
-                    if (GUILayout.Button("-", GUILayout.Width(50)))
-                    {
-                        _planet.Data.OceanGradient.Points.RemoveAt(_selectedPoint);
-                        _selectedPoint = -1;
-                        GenerateOceanGradientTexture();
-                    }
-                    else
-                    {
-                        // If not removed check for changes and apply new properties
-                        _planet.Data.OceanGradient.Points[_selectedPoint] = point;
-                        if (prevPoint.Color != point.Color ||
-                            prevPoint.Position != point.Position ||
-                            prevPoint.Weight != point.Weight)
-                        {
-                            GenerateOceanGradientTexture();
-                            _changed = false;
-                        }
-                    }
-                }
-                else
-                {
-                    GUILayout.Label("Click to add a point.");
-                }
-                GUILayout.EndVertical();
-                Rect pointMenuRect = GUILayoutUtility.GetLastRect();
-                GUILayout.EndHorizontal();
-
-                return pointMenuRect;
-            }
-
-            void HandleMouseInput(Rect textureRect, Rect pointMenuRect)
-            {
-                // Catch events
-                Event e = Event.current;
-                if (e.type == EventType.MouseDown)
-                {
-                    // Check if mouse press is over the gradient graph area
-                    if (textureRect.x < e.mousePosition.x && e.mousePosition.x < textureRect.x + textureRect.width &&
-                    textureRect.y < e.mousePosition.y && e.mousePosition.y < textureRect.y + textureRect.height)
-                    {
-                        Vector2 positionNormalized = new Vector2((e.mousePosition.x - textureRect.x) / textureRect.width, (textureRect.y + textureRect.height - e.mousePosition.y) / textureRect.height);
-                        // If point was previously selected apply new position
-                        if (0 <= _selectedPoint)
-                        {
-                            GradientPoint point = _planet.Data.OceanGradient.Points[_selectedPoint];
-                            _oceanGradientColor = point.Color;
-                            point.Position = positionNormalized;
-                            _planet.Data.OceanGradient.Points[_selectedPoint] = point;
-                        }
-                        // No point selected means adding new point
-                        else
-                        {
-                            _planet.Data.OceanGradient.Points.Add(new GradientPoint(_oceanGradientColor, positionNormalized, 1f));
-                            _selectedPoint = _planet.Data.OceanGradient.Points.Count - 1;
-                        }
-                        GenerateOceanGradientTexture();
-                        GUI.changed = true;
-                    }
-                    // Check if mouse is over point menu
-                    else if (pointMenuRect.x < e.mousePosition.x && e.mousePosition.x < pointMenuRect.x + pointMenuRect.width &&
-                  pointMenuRect.y < e.mousePosition.y && e.mousePosition.y < pointMenuRect.y + pointMenuRect.height)
-                    {
-                        // Do not unselect points when adjusting point properties
-                    }
-                    // When mousepress is not on focus area
-                    else
-                    {
-                        _selectedPoint = -1;
-                        GUI.changed = true;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// A UI element exposing the self implemented 2D gradient.
-        /// Connected to the biome settings.
-        /// TODO: should be more advanced using textures instead of colors.
-        /// </summary>
-        void ShowBiomeGradient()
-        {
-            if (_oceanTexture == null) GenerateOceanGradientTexture();
-            GUILayout.BeginHorizontal();
-            Rect textureRect = ShowGradientField();
-            Rect pointMenuRect = ShowPointProperties();
-            HandleMouseInput(textureRect, pointMenuRect);
-
-            Rect ShowGradientField()
-            {
-                // Check for change values
-                float smooth = _planet.Data.biomeGradient.Smooth;
-
-                GUILayout.BeginVertical();
-                // Title
-                GUILayout.Label("Biome gradient");
-                GUILayout.Space(10);
-
-                // Graph
-                GUILayout.Label("Humidity");
-                GUILayout.Label("", _styles["BiomeTexture"], GUILayout.MinWidth(150), GUILayout.MinHeight(100));
-                Rect textureRect = GUILayoutUtility.GetLastRect();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("Temperature");
-                GUILayout.EndHorizontal();
-
-                // Smoothing Menu
-                GUILayout.Label("Gradient smoothing");
-                _planet.Data.biomeGradient.Smooth = GUILayout.HorizontalSlider(_planet.Data.biomeGradient.Smooth, 0.1f, 10f, GUILayout.Height(20));
-                if (_planet.Data.biomeGradient.Smooth != smooth) GenerateBiomeGradientTexture();
-
-                // Color points on graph
-                for (int i = 0; i < _planet.Data.biomeGradient.Points.Count; i++)
-                {
-                    GradientPoint point = _planet.Data.biomeGradient.Points[i];
-                    int size = i == _selectedPoint ? 30 : 20;
-                    GUI.backgroundColor = Color.Lerp(point.Color, Color.white, 0.2f);
-                    if (GUI.Button(new Rect(
-                        textureRect.x + textureRect.width * point.Position.x - size / 2,
-                        textureRect.y + textureRect.height * (1 - point.Position.y) - size / 2,
-                        size, size), "", _styles["IndicatorFinished"]))
-                    {
-                        _selectedPoint = i;
-                        _oceanGradientColor = point.Color;
-                    }
-                }
-                GUI.backgroundColor = Color.white;
-                GUILayout.EndVertical();
-
-                return textureRect;
-            }
-
-            Rect ShowPointProperties()
-            {
-                GUILayout.BeginVertical(GUILayout.MaxWidth(100), GUILayout.ExpandHeight(true));
-
-                // Title
-                GUILayout.Label("Point menu");
-                GUILayout.Space(10);
-
-                // Menu
-                if (0 <= _selectedPoint)
-                {
-                    // Check for change values
-                    GradientPoint point = _planet.Data.biomeGradient.Points[_selectedPoint];
-                    GradientPoint prevPoint = new GradientPoint(point.Color, point.Position, point.Weight);
-
-                    // Gradient point properties
-                    GUILayout.Label("Color:");
-                    _oceanGradientColor = EditorGUILayout.ColorField(_oceanGradientColor);
-                    point.Color = _oceanGradientColor;
-                    GUILayout.Label("Weight:");
-                    point.Weight = GUILayout.HorizontalSlider(point.Weight, 0, 5, GUILayout.Height(20));
-
-                    // Remove selected point
-                    if (GUILayout.Button("-", GUILayout.Width(50)))
-                    {
-                        _planet.Data.biomeGradient.Points.RemoveAt(_selectedPoint);
-                        _selectedPoint = -1;
-                        GenerateBiomeGradientTexture();
-                    }
-                    else
-                    {
-                        // If not removed check for changes and apply new properties
-                        _planet.Data.biomeGradient.Points[_selectedPoint] = point;
-                        if (prevPoint.Color != point.Color ||
-                            prevPoint.Position != point.Position ||
-                            prevPoint.Weight != point.Weight)
-                        {
-                            GenerateBiomeGradientTexture();
-                            _changed = false;
-                        }
-
-                    }
-                }
-                else
-                {
-                    GUILayout.Label("Click to add a point.");
-                }
-                GUILayout.EndVertical();
-                Rect pointMenuRect = GUILayoutUtility.GetLastRect();
-                GUILayout.EndHorizontal();
-
-                return pointMenuRect;
-            }
-
-            void HandleMouseInput(Rect textureRect, Rect pointMenuRect)
-            {
-                // Catch events
-                Event e = Event.current;
-                if (e.type == EventType.MouseDown)
-                {
-                    // Check if mouse press is over the gradient graph area
-                    if (textureRect.x < e.mousePosition.x && e.mousePosition.x < textureRect.x + textureRect.width &&
-                    textureRect.y < e.mousePosition.y && e.mousePosition.y < textureRect.y + textureRect.height)
-                    {
-                        Vector2 positionNormalized = new Vector2((e.mousePosition.x - textureRect.x) / textureRect.width, (textureRect.y + textureRect.height - e.mousePosition.y) / textureRect.height);
-                        // If point was previously selected apply new position
-                        if (0 <= _selectedPoint)
-                        {
-                            GradientPoint point = _planet.Data.biomeGradient.Points[_selectedPoint];
-                            _oceanGradientColor = point.Color;
-                            point.Position = positionNormalized;
-                            _planet.Data.biomeGradient.Points[_selectedPoint] = point;
-                        }
-                        // No point selected means adding new point
-                        else
-                        {
-                            _planet.Data.biomeGradient.Points.Add(new GradientPoint(_oceanGradientColor, positionNormalized, 1f));
-                            _selectedPoint = _planet.Data.biomeGradient.Points.Count - 1;
-                        }
-                        GenerateBiomeGradientTexture();
-                        GUI.changed = true;
-                    }
-                    // Check if mouse is over point menu
-                    else if (pointMenuRect.x < e.mousePosition.x && e.mousePosition.x < pointMenuRect.x + pointMenuRect.width &&
-                  pointMenuRect.y < e.mousePosition.y && e.mousePosition.y < pointMenuRect.y + pointMenuRect.height)
-                    {
-                        // Do not unselect points when adjusting point properties
-                    }
-                    // When mousepress is not on focus area
-                    else
-                    {
-                        _selectedPoint = -1;
-                        GUI.changed = true;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Displays the gradient for the biome.
-        /// </summary>
-        void GenerateBiomeGradientTexture()
-        {
-            _biomeTexture = _planet.Data.biomeGradient.GetTexture(256, 256);
-            _styles["BiomeTexture"].normal.background = _biomeTexture;
-            _changed = true;
         }
 
         /// <summary>

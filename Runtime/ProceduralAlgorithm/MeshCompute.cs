@@ -67,19 +67,19 @@ namespace PlanetEngine
         {
             // TODO: make compatible with not all arrays active.
             // Clear old input mesh buffers.
-            _inputMeshVertices.Dispose();
-            _inputMeshIndexes.Dispose();
-            _inputMeshUVs.Dispose();
+            if (_inputMeshVertices != null) _inputMeshVertices.Dispose();
+            if (_inputMeshIndexes != null) _inputMeshIndexes.Dispose();
+            if (_inputMeshUVs != null) _inputMeshUVs.Dispose();
 
             // Set the output to the input.
-            _inputMeshVertices = _outputMeshVertices;
-            _inputMeshIndexes = _outputMeshIndexes;
-            _inputMeshUVs = _outputMeshUVs;
+            if (_outputMeshVertices != null) _inputMeshVertices = _outputMeshVertices;
+            if (_outputMeshIndexes != null) _inputMeshIndexes = _outputMeshIndexes;
+            if (_outputMeshUVs != null) _inputMeshUVs = _outputMeshUVs;
 
             // Add buffers to shader.
-            Shader.SetBuffer(KernelId, "input_vertice_array", _inputMeshVertices);
-            Shader.SetBuffer(KernelId, "input_index_array", _inputMeshIndexes);
-            Shader.SetBuffer(KernelId, "input_uv_array", _inputMeshUVs);
+            if (_inputMeshVertices != null) Shader.SetBuffer(KernelId, "input_vertice_array", _inputMeshVertices);
+            if (_inputMeshIndexes != null) Shader.SetBuffer(KernelId, "input_index_array", _inputMeshIndexes);
+            if (_inputMeshUVs != null) Shader.SetBuffer(KernelId, "input_uv_array", _inputMeshUVs);
 
             SetOutputMeshProperties(vertexSize, indexSize);
         }
