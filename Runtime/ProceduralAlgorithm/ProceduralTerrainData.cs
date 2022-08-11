@@ -30,28 +30,17 @@ namespace PlanetEngine
         /// </summary>
         /// <param name="planetData">The planet data contianing the textures</param>
         /// <returns>A array of terrainlayers</returns>
-        // TODO: this should take the actual textures given by the biome gradient instead of colors.
         public static TerrainLayer[] GenerateTerrainLayers(PlanetData planetData)
         {
-            Texture2D red = new Texture2D(1, 1);
-            Texture2D green = new Texture2D(1, 1);
-            Texture2D blue = new Texture2D(1, 1);
-            red.SetPixel(0, 0, Color.red);
-            green.SetPixel(0, 0, Color.green);
-            blue.SetPixel(0, 0, Color.blue);
-            red.Apply();
-            green.Apply();
-            blue.Apply();
+            List<TerrainLayer> layers = new List<TerrainLayer>();
+            foreach (GradientPoint point in planetData.BiomeGradient.Points)
+            {
+                TerrainLayer layer = new TerrainLayer();
+                layer.diffuseTexture = point.GetTexture();
+                layers.Add(layer);
+            }
 
-            TerrainLayer[] layers = new TerrainLayer[3];
-            layers[0] = new TerrainLayer();
-            layers[0].diffuseTexture = red;
-            layers[1] = new TerrainLayer();
-            layers[1].diffuseTexture = green;
-            layers[2] = new TerrainLayer();
-            layers[2].diffuseTexture = blue;
-
-            return layers;
+            return layers.ToArray();
         }
 
         /// <summary>
@@ -67,16 +56,23 @@ namespace PlanetEngine
             Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, planetData);
             Texture2D heatTexture = ProceduralTexture.GetHeatTexture(baseTexture, heightTexture, planetData);
             Texture2D humidityTexture = ProceduralTexture.GetHumidityTexture(baseTexture, planetData);
-            Texture2D colorTexture = ProceduralTexture.GetBiomeTextureColored(heightTexture, heatTexture, humidityTexture, planetData);
-            Color[] buffer = colorTexture.GetPixels(0);
-            float[,,] alphaValueArray = new float[baseTexture.width, baseTexture.height, 3];
-            for (int i = 0; i < buffer.Length; i++)
+            float[,,] alphaValueArray = new float[baseTexture.width, baseTexture.height, planetData.BiomeGradient.Points.Length];
+            for (int x = 0; x < baseTexture.width; x++)
             {
-                int x = i % baseTexture.width;
-                int y = i / baseTexture.width;
-                alphaValueArray[x, y, 0] = buffer[i].r;
-                alphaValueArray[x, y, 1] = buffer[i].g;
-                alphaValueArray[x, y, 2] = buffer[i].b;
+                for (int y = 0; y < baseTexture.height; y++)
+                {
+                    float totalWeight = 0;
+                    for (int i = 0; i < planetData.BiomeGradient.Points.Length; i++)
+                    {
+                        alphaValueArray[x, y, i] = planetData.BiomeGradient.GetPointValueAt(heatTexture.GetPixel(x, y).r, humidityTexture.GetPixel(x, y).r, i);
+                        totalWeight += alphaValueArray[x, y, i];
+                    }
+
+                    for (int i = 0; i < planetData.BiomeGradient.Points.Length; i++)
+                    {
+                        alphaValueArray[x, y, i] /= totalWeight;
+                    }
+                }
             }
             return alphaValueArray;
         }
@@ -85,26 +81,32 @@ namespace PlanetEngine
         /// This takes the tree objects and creates prototypes for the terrain.
         /// </summary>
         /// <returns>An array of tree prototypes</returns>
-        public static TreePrototype[] GenerateTreePrototypes()
+        public static TreePrototype[] GenerateTreePrototypes(PlanetData planetData)
         {
-            List<TreePrototype> treePrototypes = new List<TreePrototype>();
-            TreePrototype treePrototype = new TreePrototype();
-            treePrototype.prefab = Resources.Load<GameObject>("tree");
-            treePrototypes.Add(treePrototype);
-            return treePrototypes.ToArray();
+            TreePrototype[] treePrototypes = new TreePrototype[planetData.TreeTypes.Length];
+            for (int i = 0; i < treePrototypes.Length; i++)
+            {
+                TreePrototype treePrototype = new TreePrototype();
+                treePrototype.prefab = planetData.TreeTypes[i].GetTree();
+                treePrototypes[i] = treePrototype;
+            }
+            return treePrototypes;
         }
 
         /// <summary>
         /// This takes the detail (foliage) objects and creates prototypes for the terrain.
         /// </summary>
         /// <returns>An array of detail (foliage) prototypes</returns>
-        public static DetailPrototype[] GenerateDetailPrototypes()
+        public static DetailPrototype[] GenerateDetailPrototypes(PlanetData planetData)
         {
-            List<DetailPrototype> detailPrototypes = new List<DetailPrototype>();
-            DetailPrototype detailPrototype = new DetailPrototype();
-            detailPrototype.prototypeTexture = Resources.Load<Texture2D>("grass");
-            detailPrototypes.Add(detailPrototype);
-            return detailPrototypes.ToArray();
+            DetailPrototype[] detailPrototypes = new DetailPrototype[planetData.FoliageTypes.Length];
+            for (int i = 0; i < planetData.FoliageTypes.Length; i++)
+            {
+                DetailPrototype detailPrototype = new DetailPrototype();
+                detailPrototype.prototypeTexture = planetData.FoliageTypes[i].GetFoliage();
+                detailPrototypes[i] = detailPrototype;
+            }
+            return detailPrototypes;
         }
 
         /// <summary>
@@ -113,9 +115,10 @@ namespace PlanetEngine
         /// </summary>
         /// <param name="resolution">The amount of trees placed per square meter</param>
         /// <returns>An array of tree instances</returns>
-        public static TreeInstance[] GenerateTreeInstances(int resolution)
+        public static TreeInstance[] GenerateTreeInstances(int resolution, PlanetData planetData)
         {
             List<TreeInstance> treeInstanceList = new List<TreeInstance>();
+            if (planetData.TreeTypes.Length == 0) return treeInstanceList.ToArray();
             for (int x = 0; x < resolution; x++)
             {
                 for (int y = 0; y < resolution; y++)
@@ -129,7 +132,7 @@ namespace PlanetEngine
                     instance.heightScale = 1;
                     instance.widthScale = 1;
                     instance.position = new Vector3(x_norm, 0, y_norm);
-                    instance.prototypeIndex = 0;
+                    instance.prototypeIndex = Random.Range(0, planetData.TreeTypes.Length);
                     treeInstanceList.Add(instance);
                 }
             }

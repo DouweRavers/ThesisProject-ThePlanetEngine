@@ -9,12 +9,6 @@ namespace PlanetEngine
     [RequireComponent(typeof(TerrainCollider))]
     internal class PlanetTerrain : MonoBehaviour
     {
-        // TEMP: this should be part of the creator menu;
-        [SerializeField]
-        GameObject _tree;
-        [SerializeField]
-        Texture2D _grass;
-
         /// <summary>
         /// Data used by the unity terrain system.
         /// </summary>
@@ -69,6 +63,7 @@ namespace PlanetEngine
             GenerateTerrainData();
             PositionTerrain();
             GetComponent<Terrain>().materialTemplate = new Material(Shader.Find("Nature/Terrain/Standard"));
+            GetComponent<Terrain>().treeCrossFadeLength = 50;
             enabled = true;
         }
 
@@ -101,9 +96,9 @@ namespace PlanetEngine
             float[,] heightValues = ProceduralTerrainData.GenerateHeightValues(baseValues, _planet.Data);
             TerrainLayer[] layers = ProceduralTerrainData.GenerateTerrainLayers(_planet.Data);
             float[,,] alphaValues = ProceduralTerrainData.GenerateAlphaValues(baseValues, _planet.Data);
-            TreePrototype[] treePrototypes = ProceduralTerrainData.GenerateTreePrototypes();
-            DetailPrototype[] detailPrototypes = ProceduralTerrainData.GenerateDetailPrototypes();
-            TreeInstance[] treeInstances = ProceduralTerrainData.GenerateTreeInstances(resolution / 10);
+            TreePrototype[] treePrototypes = ProceduralTerrainData.GenerateTreePrototypes(_planet.Data);
+            DetailPrototype[] detailPrototypes = ProceduralTerrainData.GenerateDetailPrototypes(_planet.Data);
+            TreeInstance[] treeInstances = ProceduralTerrainData.GenerateTreeInstances(resolution / 10, _planet.Data);
             int[,] detailInstances = ProceduralTerrainData.GenerateDetailInstances(resolution);
 
             TerrainData = new TerrainData();

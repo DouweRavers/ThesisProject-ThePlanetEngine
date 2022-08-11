@@ -146,7 +146,7 @@ namespace PlanetEngine
             generator.AddTexture("heat_texture", heatTexture);
             generator.AddTexture("humidity_texture", humidityTexture);
             generator.AddTexture("gradient_ocean_texture", data.OceanGradient.GetTexture(heightTexture.width, heightTexture.height));
-            generator.AddTexture("gradient_biome_texture", data.biomeGradient.GetTexture(heightTexture.width, heightTexture.height));
+            generator.AddTexture("gradient_biome_texture", data.BiomeGradient.GetTexture(heightTexture.width, heightTexture.height));
             generator.AddValue("has_ocean", data.HasOcean);
             generator.OutputTextureProperties("color_texture_out", heightTexture.width, heightTexture.height);
             return generator.GetOutputTexture();
@@ -169,7 +169,7 @@ namespace PlanetEngine
             generator.SetKernel("GenerateGroundColorTexture", ShaderType.COLOR);
             generator.AddTexture("heat_texture", heatTexture);
             generator.AddTexture("humidity_texture", humidityTexture);
-            generator.AddTexture("gradient_biome_texture", data.biomeGradient.GetTexture(heatTexture.width, heatTexture.height));
+            generator.AddTexture("gradient_biome_texture", data.BiomeGradient.GetTexture(heatTexture.width, heatTexture.height));
             generator.OutputTextureProperties("color_texture_out", heatTexture.width, heatTexture.height);
             return generator.GetOutputTexture();
         }

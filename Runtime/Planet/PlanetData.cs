@@ -1,10 +1,46 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace PlanetEngine
 {
+
+    [Serializable]
+    public struct DataReference
+    {
+        public float MinHeat;
+        public float MaxHeat;
+        public float MinHumidity;
+        public float MaxHumidity;
+        [SerializeField]
+        string _path;
+
+
+        public void SetFoliage(Texture2D texture)
+        {
+            _path = AssetDatabase.GetAssetPath(texture);
+        }
+
+        public void SetTree(GameObject tree)
+        {
+            _path = AssetDatabase.GetAssetPath(tree);
+        }
+
+        public Texture2D GetFoliage() { return AssetDatabase.LoadAssetAtPath<Texture2D>(_path); }
+        public GameObject GetTree() { return AssetDatabase.LoadAssetAtPath<GameObject>(_path); }
+
+
+        public bool Equals(DataReference dataEntry)
+        {
+            return _path == dataEntry._path
+                && MinHeat == dataEntry.MinHeat
+                && MaxHeat == dataEntry.MaxHeat
+                && MinHumidity == dataEntry.MinHumidity
+                && MaxHumidity == dataEntry.MaxHumidity;
+        }
+    }
+
     /// <summary>
     /// This class holds all properties for a procedural planet to be generated.
     /// </summary>
@@ -37,7 +73,6 @@ namespace PlanetEngine
         /// <summary> How reflective is the ocean material. </summary>
         public float OceanReflectiveness = 0.7f;
         /// <summary> A color gradient for the water x=Heat, y=Depth. </summary>
-        [NonSerialized]
         public Gradient2D OceanGradient;
         // Climate
         /// <summary> The intesity of heat reaching the planet. </summary>
@@ -59,11 +94,13 @@ namespace PlanetEngine
         /// <summary> The color of the clouds based on density (alpha included). </summary>
         public Gradient CloudGradient;
         // Biomes
-        /// <summary> TEMP color of terrain. x=heat, y=humidity </summary>
-        [NonSerialized]
-        public Gradient2D biomeGradient;
+        /// <summary>color of terrain. x=heat, y=humidity </summary>
+        public Gradient2D BiomeGradient;
         // Vegetation
+        public DataReference[] FoliageTypes;
+        public DataReference[] TreeTypes;
         #endregion
+
 
         #region Rendering Properties
         /// <summary> The amount of subdivisions of the quad tree before max depht. </summary>
@@ -72,16 +109,15 @@ namespace PlanetEngine
         public int LODSphereCount = 3;
         #endregion
 
-        private void Awake()
+        public void SetupDefaults()
         {
-            OceanGradient = CreateInstance<Gradient2D>();
-            OceanGradient.Points = new List<GradientPoint>();
-            OceanGradient.Points.Add(new GradientPoint(Color.white, Vector2.one * 0.5f, 1f));
-            biomeGradient = CreateInstance<Gradient2D>();
-            biomeGradient.Points = new List<GradientPoint>();
-            biomeGradient.Points.Add(new GradientPoint(Texture2D.whiteTexture, Vector2.one * 0.5f, 1f));
+            OceanGradient = new Gradient2D(Color.blue);
+            BiomeGradient = new Gradient2D(Resources.Load<Texture2D>("Grass"));
             CloudGradient = new Gradient();
+            FoliageTypes = new DataReference[0];
+            TreeTypes = new DataReference[0];
         }
+
         #region IO
 
         /// <summary>
@@ -91,11 +127,8 @@ namespace PlanetEngine
         /// <param name="name">The name of the planet</param>
         public void SaveData(string name)
         {
-            string dataContent = JsonUtility.ToJson(this, true);
-            string oceanGradientContent = JsonUtility.ToJson(OceanGradient, true);
-            string biomeGradientContent = JsonUtility.ToJson(biomeGradient, true);
-            string content = $"{dataContent}${oceanGradientContent}${biomeGradientContent}";
-            File.WriteAllText("Assets/PlanetEngineData/" + name + "-planetData.json", content);
+            TextAsset file = new TextAsset(JsonUtility.ToJson(this, true));
+            AssetDatabase.CreateAsset(file, $"Assets/PlanetEngineData/{name}-planetData.asset");
         }
 
         /// <summary>
@@ -106,18 +139,10 @@ namespace PlanetEngine
         /// <exception>When file can't be found throws exception</exception>
         public void LoadData(string name)
         {
-            if (File.Exists("Assets/PlanetEngineData/" + name + "-planetData.json"))
-            {
-                string content = File.ReadAllText("Assets/PlanetEngineData/" + name + "-planetData.json");
-                string[] parsedContent = content.Split('$');
-                JsonUtility.FromJsonOverwrite(parsedContent[0], this);
-                JsonUtility.FromJsonOverwrite(parsedContent[1], OceanGradient);
-                JsonUtility.FromJsonOverwrite(parsedContent[2], biomeGradient);
-            }
-            else
-            {
-                throw new FileNotFoundException();
-            }
+            TextAsset file = AssetDatabase.LoadAssetAtPath<TextAsset>($"Assets/PlanetEngineData/{name}-planetData.asset");
+            if (file == null) return;
+            JsonUtility.FromJsonOverwrite(file.text, this);
+            foreach (GradientPoint point in BiomeGradient.Points) point.UpdateTexture();
         }
         #endregion
 
@@ -150,7 +175,7 @@ namespace PlanetEngine
             ContinentScale = UnityEngine.Random.Range(0.1f, 5f);
             heightDifference = UnityEngine.Random.Range(0f, 1f);
             HasOcean = UnityEngine.Random.Range(0, 2) == 0;
-            OceanGradient = CreateInstance<Gradient2D>();
+            OceanGradient = new Gradient2D();
             List<GradientPoint> points = new List<GradientPoint>();
             for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
             {
@@ -159,8 +184,8 @@ namespace PlanetEngine
                 float randWeight = UnityEngine.Random.Range(0, 5f);
                 points.Add(new GradientPoint(randColor, randVec, randWeight));
             }
-            OceanGradient.Points = points;
-            OceanGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
+            OceanGradient.Points = points.ToArray();
+            OceanGradient.Smooth = UnityEngine.Random.Range(0.1f, 10f);
             OceanReflectiveness = UnityEngine.Random.Range(0.5f, 1f);
         }
 
@@ -183,7 +208,7 @@ namespace PlanetEngine
         /// </summary>
         public void RandomizeBiomeProperties()
         {
-            biomeGradient = CreateInstance<Gradient2D>();
+            BiomeGradient = new Gradient2D();
             List<GradientPoint> points = new List<GradientPoint>();
             for (int i = 0; i < UnityEngine.Random.Range(3, 10); i++)
             {
@@ -192,8 +217,8 @@ namespace PlanetEngine
                 float randWeight = UnityEngine.Random.Range(0, 5f);
                 points.Add(new GradientPoint(randColor, randVec, randWeight));
             }
-            biomeGradient.Points = points;
-            biomeGradient.Smooth = UnityEngine.Random.Range(0.1f, 5f);
+            BiomeGradient.Points = points.ToArray();
+            BiomeGradient.Smooth = UnityEngine.Random.Range(0.1f, 10f);
         }
         #endregion
     }

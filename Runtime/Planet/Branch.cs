@@ -130,7 +130,7 @@ namespace PlanetEngine
                 ChildQuadObject.transform.localEulerAngles = Vector3.zero;
 
                 // Define which zone of the current branch this new branch will represent.
-                Rect zone = Rect.zero;
+                Rect zone;
                 if (i == 0) zone = new Rect(0, 0, 0.5f, 0.5f);
                 else if (i == 1) zone = new Rect(0, 0.5f, 0.5f, 0.5f);
                 else if (i == 2) zone = new Rect(0.5f, 0, 0.5f, 0.5f);

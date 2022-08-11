@@ -67,6 +67,7 @@ namespace PlanetEngine
                 GameObject Atmosphere = new GameObject("Atmosphere");
                 Atmosphere.tag = "PlanetEngine";
                 Atmosphere.transform.SetParent(transform);
+                Atmosphere.transform.localScale = Vector3.zero;
                 Atmosphere.transform.localScale = Vector3.one * 1.1f;
                 Atmosphere.AddComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(Data);
                 Atmosphere.AddComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetAtmosphereMaterial(Data);

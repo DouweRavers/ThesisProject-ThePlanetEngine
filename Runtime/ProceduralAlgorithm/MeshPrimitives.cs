@@ -18,11 +18,6 @@ namespace PlanetEngine
         /// </summary>
         public static Mesh UnitCube { get { return GenerateUnitCubeMesh(); } }
 
-        /// <summary>
-        /// A sphere with a radius of 1m
-        /// </summary>
-        public static Mesh UnitSphere { get { return GenerateUnitSphere(); } }
-
         static Mesh GenerateUnitQuadMesh()
         { // basis for a plane
 
@@ -127,7 +122,6 @@ namespace PlanetEngine
                 new Vector2(2f/4, 2f/3), // 4 x1y0
 
                 // BottomFace
-			
                 new Vector2(1f/4, 0), // 1 x0y0
                 new Vector2(1f/4, 1f/3), // 2 x0y1
                 new Vector2(2f/4, 1f/3), // 3 x1y1
@@ -145,13 +139,6 @@ namespace PlanetEngine
             mesh.vertices = newVertices.ToArray();
             mesh.triangles = newIndexes.ToArray();
             mesh.uv = newUV.ToArray();
-            return mesh;
-        }
-
-        static Mesh GenerateUnitSphere()
-        {
-            Mesh mesh = MeshModifier.Subdivide(UnitCube, 5);
-            mesh = MeshModifier.NormalizeAndAmplify(mesh, 1f);
             return mesh;
         }
     }

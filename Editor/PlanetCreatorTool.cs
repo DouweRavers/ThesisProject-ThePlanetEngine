@@ -34,7 +34,7 @@ namespace PlanetEngine
         {
             ShowGenerationMenu();
 
-            if (s_lastUpdate + 0.3f < Time.realtimeSinceStartup && _changed)
+            if (s_lastUpdate + 0.2f < Time.realtimeSinceStartup && _changed)
             {
                 _changed = false;
                 if (!AssetDatabase.IsValidFolder("Assets/PlanetEngineData")) AssetDatabase.CreateFolder("Assets", "PlanetEngineData");
@@ -97,7 +97,7 @@ namespace PlanetEngine
             style = new GUIStyle();
             style.margin = new RectOffset(20, 20, 20, 20);
             Styles["OceanTexture"] = style;
-            if (_planet.Data != null && _planet.Data.OceanGradient != null)
+            if (_planet.Data != null && _planet.Data.OceanGradient.Points != null)
             {
                 _oceanGradient.GenerateTexture();
                 _changed = false;
@@ -106,7 +106,7 @@ namespace PlanetEngine
             style = new GUIStyle();
             style.margin = new RectOffset(20, 20, 20, 20);
             Styles["BiomeTexture"] = style;
-            if (_planet.Data != null && _planet.Data.biomeGradient != null)
+            if (_planet.Data != null && _planet.Data.BiomeGradient.Points != null)
             {
                 _biomeGradient.GenerateTexture();
                 _changed = false;
@@ -374,8 +374,78 @@ namespace PlanetEngine
         void ShowVegetationMenu()
         {
             ShowPanelHeader("Vegetation - " + _planet.name);
-            GUILayout.Label("Tree:");
-            //EditorGUILayout.ObjectField(null);
+            GUILayout.BeginHorizontal();
+
+            // Foliage input menu
+            GUILayout.BeginVertical();
+            {
+                GUILayout.Label("Foliage:");
+                for (int i = 0; i < _planet.Data.FoliageTypes.Length; i++)
+                {
+                    DataReference foliage = _planet.Data.FoliageTypes[i];
+                    foliage.SetFoliage(EditorGUILayout.ObjectField(foliage.GetFoliage(), typeof(Texture2D), false) as Texture2D);
+                    if (foliage.GetFoliage() == null) continue;
+                    GUILayout.Label("Heat:");
+                    EditorGUILayout.MinMaxSlider(ref foliage.MinHeat, ref foliage.MaxHeat, 0f, 1f);
+                    GUILayout.Label("Humidity:");
+                    EditorGUILayout.MinMaxSlider(ref foliage.MinHumidity, ref foliage.MaxHumidity, 0f, 1f);
+                    if (!foliage.Equals(_planet.Data.FoliageTypes[i])) UpdateUI();
+                    _planet.Data.FoliageTypes[i] = foliage;
+                }
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("+"))
+                {
+                    List<DataReference> list = new List<DataReference>(_planet.Data.FoliageTypes);
+                    list.Add(new DataReference());
+                    _planet.Data.FoliageTypes = list.ToArray();
+                    UpdateUI();
+                }
+                if (0 < _planet.Data.FoliageTypes.Length && GUILayout.Button("-"))
+                {
+                    List<DataReference> list = new List<DataReference>(_planet.Data.FoliageTypes);
+                    list.RemoveAt(list.Count - 1);
+                    _planet.Data.FoliageTypes = list.ToArray();
+                    UpdateUI();
+                }
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.EndVertical();
+
+            // Tree input menu
+            GUILayout.BeginVertical();
+            {
+                GUILayout.Label("Tree:");
+                for (int i = 0; i < _planet.Data.TreeTypes.Length; i++)
+                {
+                    DataReference tree = _planet.Data.TreeTypes[i];
+
+                    _planet.Data.TreeTypes[i].SetTree(EditorGUILayout.ObjectField(_planet.Data.TreeTypes[i].GetTree(), typeof(GameObject), false) as GameObject);
+                    if (_planet.Data.TreeTypes[i].GetTree() == null) continue;
+                    GUILayout.Label("Heat:");
+                    EditorGUILayout.MinMaxSlider(ref _planet.Data.TreeTypes[i].MinHeat, ref _planet.Data.TreeTypes[i].MaxHeat, 0f, 1f);
+                    GUILayout.Label("Humidity:");
+                    EditorGUILayout.MinMaxSlider(ref _planet.Data.TreeTypes[i].MinHumidity, ref _planet.Data.TreeTypes[i].MaxHumidity, 0f, 1f);
+                    if (!_planet.Data.TreeTypes[i].Equals(tree)) UpdateUI();
+                }
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("+"))
+                {
+                    List<DataReference> list = new List<DataReference>(_planet.Data.TreeTypes);
+                    list.Add(new DataReference());
+                    _planet.Data.TreeTypes = list.ToArray();
+                    UpdateUI();
+                }
+                if (0 < _planet.Data.TreeTypes.Length && GUILayout.Button("-"))
+                {
+                    List<DataReference> list = new List<DataReference>(_planet.Data.TreeTypes);
+                    list.RemoveAt(list.Count - 1);
+                    _planet.Data.TreeTypes = list.ToArray();
+                    UpdateUI();
+                }
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
             ShowPanelFooter();
         }
         #endregion

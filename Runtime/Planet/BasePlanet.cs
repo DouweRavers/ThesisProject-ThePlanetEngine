@@ -20,14 +20,8 @@ namespace PlanetEngine
                 if (_data == null)
                 {
                     _data = ScriptableObject.CreateInstance<PlanetData>();
-                    try
-                    {
-                        _data.LoadData(name);
-                    }
-                    catch (System.Exception)
-                    {
-                        Debug.LogWarning("No data file exists for this planet, new one is created.");
-                    }
+                    _data.SetupDefaults();
+                    _data.LoadData(name);
                 }
                 return _data;
             }

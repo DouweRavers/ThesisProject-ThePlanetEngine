@@ -35,5 +35,4 @@ float CalculateHumidityValue(float height, float humidity_factor, bool has_ocean
     return humidity;
 }
 
-
 #endif
