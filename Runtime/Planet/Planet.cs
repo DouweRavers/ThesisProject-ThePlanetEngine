@@ -92,6 +92,19 @@ namespace PlanetEngine
             _terrainMode = true;
             GetComponentInChildren<PlanetTerrain>().CreateTerrain();
             GetComponentInChildren<TreeRoot>().RemoveRootBranches();
+
+
+            // Position player
+            Vector3 position = GetClosestPointToSurface(Target.position);
+            float distance = Vector3.Distance(position, Target.position);
+            Vector3 terrainPos = GetComponentInChildren<PlanetTerrain>().transform.position;
+            terrainPos += GetComponentInChildren<Terrain>().terrainData.size / 2f;
+            Target.position = terrainPos + Vector3.up * distance;
+
+            // Rotate player
+            float angle = Vector3.Angle(Vector3.up, Target.position);
+            Vector3 axis = Vector3.Cross(Vector3.up, Target.position - transform.position);
+            Target.RotateAround(Target.position, axis, -angle);
         }
 
         /// <summary>
@@ -105,6 +118,16 @@ namespace PlanetEngine
             PlanetTerrain terrain = GetComponentInChildren<PlanetTerrain>();
             tree.CreateRootBranches();
             terrain.DestroyTerrain();
+
+            // Position player
+            Vector3 position = GetClosestPointToSurface(Target.position);
+            float distance = Vector3.Distance(position, Target.position);
+            Target.position = position + position.normalized * distance;
+
+            // Rotate player
+            float angle = Vector3.Angle(Vector3.up, Target.position);
+            Vector3 axis = Vector3.Cross(Vector3.up, Target.position - transform.position);
+            Target.RotateAround(Target.position, axis, angle);
         }
 
         /// <summary>

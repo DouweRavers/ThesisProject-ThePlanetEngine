@@ -99,7 +99,7 @@ namespace PlanetEngine
             TreePrototype[] treePrototypes = ProceduralTerrainData.GenerateTreePrototypes(_planet.Data);
             DetailPrototype[] detailPrototypes = ProceduralTerrainData.GenerateDetailPrototypes(_planet.Data);
             TreeInstance[] treeInstances = ProceduralTerrainData.GenerateTreeInstances(resolution / 10, _planet.Data);
-            int[,] detailInstances = ProceduralTerrainData.GenerateDetailInstances(resolution);
+            int[,] detailInstances = ProceduralTerrainData.GenerateDetailInstances(resolution, _planet.Data);
 
             TerrainData = new TerrainData();
             TerrainData.heightmapResolution = resolution;
@@ -108,12 +108,15 @@ namespace PlanetEngine
             TerrainData.terrainLayers = layers;
             TerrainData.SetAlphamaps(0, 0, alphaValues);
             TerrainData.size = GetSizeFromCorners(cornerPoints);
-            TerrainData.treePrototypes = treePrototypes;
-            TerrainData.detailPrototypes = detailPrototypes;
+            if (treePrototypes != null) TerrainData.treePrototypes = treePrototypes;
+            if (detailPrototypes != null) TerrainData.detailPrototypes = detailPrototypes;
             TerrainData.RefreshPrototypes();
-            TerrainData.SetTreeInstances(treeInstances, true);
-            TerrainData.SetDetailResolution(resolution, 1);
-            TerrainData.SetDetailLayer(0, 0, 0, detailInstances);
+            if (treeInstances != null) TerrainData.SetTreeInstances(treeInstances, true);
+            if (detailInstances != null)
+            {
+                TerrainData.SetDetailResolution(resolution, 1);
+                TerrainData.SetDetailLayer(0, 0, 0, detailInstances);
+            }
         }
 
         /// <summary>

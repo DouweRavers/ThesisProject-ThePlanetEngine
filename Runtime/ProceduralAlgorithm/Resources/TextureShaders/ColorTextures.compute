@@ -41,7 +41,7 @@ void GenerateHeightmapColorTexture(uint3 id : SV_DispatchThreadID)
     {
         float3 vertex = base_texture[id.xy].xyz;
         float heat = CalculateHeatValue(vertex, height_value, solar_heat, height_cooling, has_ocean);
-        float depth = clamp(-height_value, 0, 1);
+        float depth = CalculateDepthValue(height_value);
         color_texture_out[id.xy] = gradient_ocean_texture[uint2(heat * width, depth * height)]; 
     }
     else
@@ -85,7 +85,7 @@ void GenerateBiomeColorTexture(uint3 id : SV_DispatchThreadID)
 
     if (has_ocean && height_value < 0)
     {
-        float depth = clamp(-height_value, 0, 1);
+        float depth = CalculateDepthValue(height_value);
         color = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, depth * height)];
     }
     else
@@ -99,8 +99,8 @@ void GenerateBiomeColorTexture(uint3 id : SV_DispatchThreadID)
 [numthreads(1, 1, 1)]
 void GenerateOceanColorTexture(uint3 id : SV_DispatchThreadID)
 {
-    float height_value = clamp(1 + height_texture[id.xy], 0, 1);
-    color_texture_out[id.xy] = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, height_value * height)];
+    float depth = CalculateDepthValue(height_texture[id.xy]);
+    color_texture_out[id.xy] = gradient_ocean_texture[uint2(heat_texture[id.xy] * width, depth * height)];
 }
 
 

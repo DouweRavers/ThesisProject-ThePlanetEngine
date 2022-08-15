@@ -25,7 +25,7 @@ namespace PlanetEngine
             }
             if (phase == PreviewDesignPhase.BASICS)
             {
-                colorTexture = baseTexture;
+                colorTexture = Texture2D.whiteTexture;
                 return GenerateMaterial(colorTexture, normalTexture, specularTexture);
             }
 

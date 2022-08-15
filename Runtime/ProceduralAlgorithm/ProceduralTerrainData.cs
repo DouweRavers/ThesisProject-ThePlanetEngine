@@ -83,6 +83,7 @@ namespace PlanetEngine
         /// <returns>An array of tree prototypes</returns>
         public static TreePrototype[] GenerateTreePrototypes(PlanetData planetData)
         {
+            if (planetData.TreeTypes.Length == 0) return null;
             TreePrototype[] treePrototypes = new TreePrototype[planetData.TreeTypes.Length];
             for (int i = 0; i < treePrototypes.Length; i++)
             {
@@ -99,6 +100,7 @@ namespace PlanetEngine
         /// <returns>An array of detail (foliage) prototypes</returns>
         public static DetailPrototype[] GenerateDetailPrototypes(PlanetData planetData)
         {
+            if (planetData.FoliageTypes.Length == 0) return null;
             DetailPrototype[] detailPrototypes = new DetailPrototype[planetData.FoliageTypes.Length];
             for (int i = 0; i < planetData.FoliageTypes.Length; i++)
             {
@@ -117,8 +119,8 @@ namespace PlanetEngine
         /// <returns>An array of tree instances</returns>
         public static TreeInstance[] GenerateTreeInstances(int resolution, PlanetData planetData)
         {
+            if (planetData.TreeTypes.Length == 0) return null;
             List<TreeInstance> treeInstanceList = new List<TreeInstance>();
-            if (planetData.TreeTypes.Length == 0) return treeInstanceList.ToArray();
             for (int x = 0; x < resolution; x++)
             {
                 for (int y = 0; y < resolution; y++)
@@ -145,8 +147,9 @@ namespace PlanetEngine
         /// </summary>
         /// <param name="detailResolution">The amount of foliage per square meter</param>
         /// <returns>An 2D array of detail instances</returns>
-        public static int[,] GenerateDetailInstances(int detailResolution)
+        public static int[,] GenerateDetailInstances(int detailResolution, PlanetData planetData)
         {
+            if (planetData.FoliageTypes.Length == 0) return null;
             int[,] detailLevel = new int[detailResolution, detailResolution];
             for (int x = 0; x < detailResolution; x++)
             {

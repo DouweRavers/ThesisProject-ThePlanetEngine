@@ -68,7 +68,7 @@ namespace PlanetEngine
             {
                 GradientPoint point = _planet.Data.BiomeGradient.Points[i];
                 int size = i == _planet.Data.BiomeGradient.LastSelectedPoint ? 30 : 20;
-                GUI.backgroundColor = Color.Lerp(point.Color, Color.white, 0.2f);
+                GUI.backgroundColor = Color.Lerp(point.Color, Color.white, 0.5f);
                 if (GUI.Button(new Rect(
                     textureRect.x + textureRect.width * point.Position.x - size / 2,
                     textureRect.y + textureRect.height * (1 - point.Position.y) - size / 2,
