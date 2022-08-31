@@ -29,18 +29,10 @@ void GenerateGradient2DTexture(uint3 id : SV_DispatchThreadID)
     {
         float dist = distance(point_position[i], float2(x, y));
         dist = pow(dist, smooth);
-        if (dist == 0)
-        {
-            weight_sum = 0;
-            color_sum = point_color[i];
-            break;
-        }
-        else
-        {
-            float weight = 1 / dist * point_weight[i];
-            color_sum += point_color[i] * weight;
-            weight_sum += weight;
-        }
+
+        float weight = (dist == 0 ? 1 : 1 / dist) * point_weight[i];
+        color_sum += point_color[i] * weight;
+        weight_sum += weight;        
     }
     if (weight_sum != 0) color_sum /= weight_sum;
     color_sum.a = 1;

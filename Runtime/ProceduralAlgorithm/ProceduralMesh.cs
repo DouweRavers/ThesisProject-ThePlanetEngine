@@ -9,7 +9,7 @@ namespace PlanetEngine
         /// </summary>
         /// <param name="data">The planet data</param>
         /// <returns></returns>
-        public static Mesh GetSizedSphereMesh(PlanetData data)
+        public static Mesh GetSizedSphereMesh(ProceduralData data)
         {
             Mesh mesh = MeshModifier.Subdivide(MeshPrimitives.UnitCube, 6);
             mesh = MeshModifier.NormalizeAndAmplify(mesh, data.Radius);
@@ -23,7 +23,7 @@ namespace PlanetEngine
         /// <param name="planetTranform"></param>
         /// <param name="subdivisions"></param>
         /// <returns></returns>
-        public static Mesh GetPlanetMesh(PlanetData data, Transform planetTranform, int subdivisions = 6)
+        public static Mesh GetPlanetMesh(ProceduralData data, Transform planetTranform, int subdivisions = 6)
         {
             Mesh mesh = MeshModifier.Subdivide(MeshPrimitives.UnitCube, subdivisions);
             mesh = MeshModifier.NormalizeAndAmplify(mesh, data.Radius);

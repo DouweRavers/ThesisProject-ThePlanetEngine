@@ -31,7 +31,7 @@ float CalculateHumidityValue(float height, float humidity_factor, bool has_ocean
 
 float CalculateDepthValue(float height_value)
 {
-    return clamp(height_value, 0, 1);
+    return clamp(--height_value, 0, 1);
 }
 
 #endif

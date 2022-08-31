@@ -115,7 +115,10 @@ namespace PlanetEngine
             if (detailInstances != null)
             {
                 TerrainData.SetDetailResolution(resolution, 1);
-                TerrainData.SetDetailLayer(0, 0, 0, detailInstances);
+                for (int i = 0; i < _planet.Data.FoliageTypes.Length; i++)
+                {
+                    TerrainData.SetDetailLayer(0, 0, i, detailInstances);
+                }
             }
         }
 

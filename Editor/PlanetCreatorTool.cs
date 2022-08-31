@@ -382,7 +382,7 @@ namespace PlanetEngine
                 GUILayout.Label("Foliage:");
                 for (int i = 0; i < _planet.Data.FoliageTypes.Length; i++)
                 {
-                    DataReference foliage = _planet.Data.FoliageTypes[i];
+                    VegetationReference foliage = _planet.Data.FoliageTypes[i];
                     foliage.SetFoliage(EditorGUILayout.ObjectField(foliage.GetFoliage(), typeof(Texture2D), false) as Texture2D);
                     if (foliage.GetFoliage() == null) continue;
                     GUILayout.Label("Heat:");
@@ -395,14 +395,14 @@ namespace PlanetEngine
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("+"))
                 {
-                    List<DataReference> list = new List<DataReference>(_planet.Data.FoliageTypes);
-                    list.Add(new DataReference());
+                    List<VegetationReference> list = new List<VegetationReference>(_planet.Data.FoliageTypes);
+                    list.Add(new VegetationReference());
                     _planet.Data.FoliageTypes = list.ToArray();
                     UpdateUI();
                 }
                 if (0 < _planet.Data.FoliageTypes.Length && GUILayout.Button("-"))
                 {
-                    List<DataReference> list = new List<DataReference>(_planet.Data.FoliageTypes);
+                    List<VegetationReference> list = new List<VegetationReference>(_planet.Data.FoliageTypes);
                     list.RemoveAt(list.Count - 1);
                     _planet.Data.FoliageTypes = list.ToArray();
                     UpdateUI();
@@ -417,7 +417,7 @@ namespace PlanetEngine
                 GUILayout.Label("Tree:");
                 for (int i = 0; i < _planet.Data.TreeTypes.Length; i++)
                 {
-                    DataReference tree = _planet.Data.TreeTypes[i];
+                    VegetationReference tree = _planet.Data.TreeTypes[i];
 
                     _planet.Data.TreeTypes[i].SetTree(EditorGUILayout.ObjectField(_planet.Data.TreeTypes[i].GetTree(), typeof(GameObject), false) as GameObject);
                     if (_planet.Data.TreeTypes[i].GetTree() == null) continue;
@@ -430,14 +430,14 @@ namespace PlanetEngine
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("+"))
                 {
-                    List<DataReference> list = new List<DataReference>(_planet.Data.TreeTypes);
-                    list.Add(new DataReference());
+                    List<VegetationReference> list = new List<VegetationReference>(_planet.Data.TreeTypes);
+                    list.Add(new VegetationReference());
                     _planet.Data.TreeTypes = list.ToArray();
                     UpdateUI();
                 }
                 if (0 < _planet.Data.TreeTypes.Length && GUILayout.Button("-"))
                 {
-                    List<DataReference> list = new List<DataReference>(_planet.Data.TreeTypes);
+                    List<VegetationReference> list = new List<VegetationReference>(_planet.Data.TreeTypes);
                     list.RemoveAt(list.Count - 1);
                     _planet.Data.TreeTypes = list.ToArray();
                     UpdateUI();

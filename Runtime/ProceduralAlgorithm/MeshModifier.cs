@@ -66,7 +66,7 @@ namespace PlanetEngine
         /// <param name="planetPosition">The center of the planet object</param>
         /// <param name="transform">The transfrom of the planet</param>
         /// <returns></returns>
-        public static Mesh ApplyHeightmap(Mesh mesh, PlanetData data, Vector3 planetPosition, Transform transform)
+        public static Mesh ApplyHeightmap(Mesh mesh, ProceduralData data, Vector3 planetPosition, Transform transform)
         {
             MeshCompute generator = CreateInstance<MeshCompute>();
             generator.SetKernel("ApplyHeightmap");

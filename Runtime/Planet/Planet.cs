@@ -63,7 +63,7 @@ namespace PlanetEngine
         /// Planet data is set to given data.
         /// </summary>
         /// <param name="data">A struct containing generation properties for the planet.</param>
-        public void CreateNewPlanet(PlanetData data)
+        public void CreateNewPlanet(ProceduralData data)
         {
             Data = data;
             CreateNewPlanet();

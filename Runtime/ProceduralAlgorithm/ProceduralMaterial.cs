@@ -14,7 +14,7 @@ namespace PlanetEngine
         /// <param name="phase">The phase for which the material should be generated</param>
         /// <param name="textureSize">The size of the textures used in the matertial.</param>
         /// <returns>The procedurally generated material</returns>
-        public static Material GetMaterial(PlanetData data, Texture2D baseTexture = null, PreviewDesignPhase phase = PreviewDesignPhase.NONE, int textureSize = 256)
+        public static Material GetMaterial(ProceduralData data, Texture2D baseTexture = null, PreviewDesignPhase phase = PreviewDesignPhase.NONE, int textureSize = 256)
         {
             Texture2D colorTexture = null, normalTexture = null, specularTexture = null;
 
@@ -25,7 +25,7 @@ namespace PlanetEngine
             }
             if (phase == PreviewDesignPhase.BASICS)
             {
-                colorTexture = Texture2D.whiteTexture;
+                colorTexture = baseTexture;//Texture2D.whiteTexture;
                 return GenerateMaterial(colorTexture, normalTexture, specularTexture);
             }
 
@@ -67,7 +67,7 @@ namespace PlanetEngine
         /// <param name="baseTexture">A texture containing vertex values</param>
         /// <param name="textureSize">The size of the textures used in the matertial.</param>
         /// <returns>The procedurally generated material</returns>
-        public static Material GetLandMaterial(PlanetData data, Texture2D baseTexture = null, int textureSize = 256)
+        public static Material GetLandMaterial(ProceduralData data, Texture2D baseTexture = null, int textureSize = 256)
         {
             _ = GenerateDataTextures(data, baseTexture, textureSize);
             Texture2D colorTexture = ProceduralTexture.GetGroundTextureColored(s_heatmapTexture, s_humidityTexture, data);
@@ -81,7 +81,7 @@ namespace PlanetEngine
         /// <param name="baseTexture">A texture containing vertex values</param>
         /// <param name="textureSize">The size of the textures used in the matertial.</param>
         /// <returns>The procedurally generated material</returns>
-        public static Material GetOceanMaterial(PlanetData data, Texture2D baseTexture = null, int textureSize = 256)
+        public static Material GetOceanMaterial(ProceduralData data, Texture2D baseTexture = null, int textureSize = 256)
         {
             _ = GenerateDataTextures(data, baseTexture, textureSize);
             Texture2D colorTexture = ProceduralTexture.GetOceanTextureColored(s_heightTexture, s_heatmapTexture, data);
@@ -93,7 +93,7 @@ namespace PlanetEngine
         /// </summary>
         /// <param name="data">Planet data</param>
         /// <returns>The procedurally generated material</returns>
-        public static Material GetAtmosphereMaterial(PlanetData data)
+        public static Material GetAtmosphereMaterial(ProceduralData data)
         {
             // Material and textures
             Material material = new Material(Shader.Find("Standard"));
@@ -125,7 +125,7 @@ namespace PlanetEngine
         /// <param name="baseTexture">A texture containing vertex values</param>
         /// <param name="textureSize">The size of the textures used in the matertial.</param>
         /// <returns>The procedurally generated material</returns>
-        static Texture2D GenerateDataTextures(PlanetData data, Texture2D baseTexture, int textureSize)
+        static Texture2D GenerateDataTextures(ProceduralData data, Texture2D baseTexture, int textureSize)
         {
             if (baseTexture == null) baseTexture = ProceduralTexture.GetBaseTexture(textureSize, textureSize * 3 / 4);
             s_heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, data);

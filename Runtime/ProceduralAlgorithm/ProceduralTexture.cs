@@ -69,7 +69,7 @@ namespace PlanetEngine
             }
         }
 
-        internal static Texture2D GetHeightTexture(Texture2D baseTexture, PlanetData data)
+        internal static Texture2D GetHeightTexture(Texture2D baseTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateHeightmapTexture", ShaderType.DATA);
@@ -80,7 +80,7 @@ namespace PlanetEngine
             return generator.GetOutputTexture(TextureFormat.RFloat);
         }
 
-        internal static Texture2D GetHeatTexture(Texture2D baseTexture, Texture2D heightTexture, PlanetData data)
+        internal static Texture2D GetHeatTexture(Texture2D baseTexture, Texture2D heightTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateHeatTexture", ShaderType.DATA);
@@ -93,7 +93,7 @@ namespace PlanetEngine
             return generator.GetOutputTexture(TextureFormat.RFloat);
         }
 
-        internal static Texture2D GetHumidityTexture(Texture2D heightTexture, PlanetData data)
+        internal static Texture2D GetHumidityTexture(Texture2D heightTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateHumidityTexture", ShaderType.DATA);
@@ -106,7 +106,7 @@ namespace PlanetEngine
         #endregion
 
         #region Color textures
-        internal static Texture2D GetHeightTextureColored(Texture2D baseTexture, Texture2D heightTexture, PlanetData data)
+        internal static Texture2D GetHeightTextureColored(Texture2D baseTexture, Texture2D heightTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateHeightmapColorTexture", ShaderType.COLOR);
@@ -138,7 +138,7 @@ namespace PlanetEngine
             return generator.GetOutputTexture();
         }
 
-        internal static Texture2D GetBiomeTextureColored(Texture2D heightTexture, Texture2D heatTexture, Texture2D humidityTexture, PlanetData data)
+        internal static Texture2D GetBiomeTextureColored(Texture2D heightTexture, Texture2D heatTexture, Texture2D humidityTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateBiomeColorTexture", ShaderType.COLOR);
@@ -152,7 +152,7 @@ namespace PlanetEngine
             return generator.GetOutputTexture();
         }
 
-        internal static Texture2D GetOceanTextureColored(Texture2D heightTexture, Texture2D heatTexture, PlanetData data)
+        internal static Texture2D GetOceanTextureColored(Texture2D heightTexture, Texture2D heatTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateOceanColorTexture", ShaderType.COLOR);
@@ -163,7 +163,7 @@ namespace PlanetEngine
             return generator.GetOutputTexture();
         }
 
-        internal static Texture2D GetGroundTextureColored(Texture2D heatTexture, Texture2D humidityTexture, PlanetData data)
+        internal static Texture2D GetGroundTextureColored(Texture2D heatTexture, Texture2D humidityTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateGroundColorTexture", ShaderType.COLOR);
@@ -176,7 +176,7 @@ namespace PlanetEngine
         #endregion
 
         #region Effect textures
-        internal static Texture2D GetOceanReflectiveTexture(Texture2D heightTexture, PlanetData data)
+        internal static Texture2D GetOceanReflectiveTexture(Texture2D heightTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateHeightmapReflectiveTexture", ShaderType.EFFECT);
@@ -186,7 +186,7 @@ namespace PlanetEngine
             return generator.GetOutputTexture();
         }
 
-        internal static Texture2D GetNormalTexture(Texture2D heightTexture, PlanetData data)
+        internal static Texture2D GetNormalTexture(Texture2D heightTexture, ProceduralData data)
         {
             TextureCompute generator = CreateInstance<TextureCompute>();
             generator.SetKernel("GenerateNormalTexture", ShaderType.EFFECT);

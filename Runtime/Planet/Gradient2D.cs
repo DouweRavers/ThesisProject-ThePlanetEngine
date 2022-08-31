@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,7 +13,6 @@ namespace PlanetEngine
     public struct GradientPoint
     {
         public Color Color;
-        Texture2D _texture;
         [SerializeField]
         string _texturePath;
         public Vector2 Position;
@@ -20,7 +20,6 @@ namespace PlanetEngine
 
         public GradientPoint(Color color, Vector2 position, float weight)
         {
-            _texture = null;
             _texturePath = null;
             Color = color;
             Position = position;
@@ -29,12 +28,22 @@ namespace PlanetEngine
 
         public GradientPoint(Texture2D texture, Vector2 position, float weight)
         {
-            _texture = texture;
             string path = AssetDatabase.GetAssetPath(texture);
             if (path == null || path.Length == 0)
             {
-                path = $"Assets/PlanetEngineData/Unsafed-PointTexture-{Time.fixedUnscaledTime}.png";
-                AssetDatabase.CreateAsset(texture, path);
+                path = $"Assets/PlanetEngineData/new-PointTexture-{UnityEngine.Random.Range(1000, 9999)}.png";
+                File.WriteAllBytes(path, texture.EncodeToPNG());
+                AssetDatabase.ImportAsset(path);
+                var tImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (tImporter != null)
+                {
+                    tImporter.textureType = TextureImporterType.Default;
+
+                    tImporter.isReadable = true;
+
+                    AssetDatabase.ImportAsset(path);
+                    AssetDatabase.Refresh();
+                }
             }
             _texturePath = path;
             Color = CalcAverageColorOfTexture(texture);
@@ -44,48 +53,51 @@ namespace PlanetEngine
 
         public GradientPoint(string path, Vector2 position, float weight)
         {
-            _texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             _texturePath = path;
-            Color = CalcAverageColorOfTexture(_texture);
+            Color = CalcAverageColorOfTexture(AssetDatabase.LoadAssetAtPath<Texture2D>(path));
             Position = position;
             Weight = weight;
         }
 
         public void SetTexture(Texture2D texture)
         {
-            _texture = texture;
             string path = AssetDatabase.GetAssetPath(texture);
             if (path == null || path.Length == 0)
             {
-                path = $"Assets/PlanetEngineData/Unsafed-PointTexture-{Time.fixedUnscaledTime}.png";
-                AssetDatabase.CreateAsset(texture, path);
+                path = $"Assets/PlanetEngineData/new-PointTexture-{UnityEngine.Random.Range(1000, 9999)}.png";
+                File.WriteAllBytes(path, texture.EncodeToPNG());
+                AssetDatabase.ImportAsset(path);
+                var tImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (tImporter != null)
+                {
+                    tImporter.textureType = TextureImporterType.Default;
+
+                    tImporter.isReadable = true;
+
+                    AssetDatabase.ImportAsset(path);
+                    AssetDatabase.Refresh();
+                }
+
             }
             _texturePath = path;
         }
 
         public void SetTexture(string path)
         {
-            _texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             _texturePath = path;
         }
 
-        public Texture2D GetTexture() { return _texture; }
-
-        public void UpdateTexture()
-        {
-            _texture = AssetDatabase.LoadAssetAtPath<Texture2D>(_texturePath);
-            UpdateColor();
-        }
+        public Texture2D GetTexture() { return AssetDatabase.LoadAssetAtPath<Texture2D>(_texturePath); }
 
         public void UpdateColor()
         {
-            if (_texture == null) Color = CalcAverageColorOfTexture(_texture);
+            if (_texturePath == null || _texturePath.Length == 0) Color = CalcAverageColorOfTexture(AssetDatabase.LoadAssetAtPath<Texture2D>(_texturePath));
         }
 
         public bool Equals(GradientPoint point)
         {
             return
-                this._texture == point._texture &&
+                this._texturePath == point._texturePath &&
                 this.Color == point.Color &&
                 this.Position == point.Position &&
                 this.Weight == point.Weight;

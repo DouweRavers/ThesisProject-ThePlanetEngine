@@ -13,13 +13,13 @@ namespace PlanetEngine
         /// <summary>
         /// Holds all data conserning the planet generation process.
         /// </summary>
-        public PlanetData Data
+        public ProceduralData Data
         {
             get
             {
                 if (_data == null)
                 {
-                    _data = ScriptableObject.CreateInstance<PlanetData>();
+                    _data = ScriptableObject.CreateInstance<ProceduralData>();
                     _data.SetupDefaults();
                     _data.LoadData(name);
                 }
@@ -32,6 +32,6 @@ namespace PlanetEngine
             }
 
         }
-        private PlanetData _data;
+        private ProceduralData _data;
     }
 }
