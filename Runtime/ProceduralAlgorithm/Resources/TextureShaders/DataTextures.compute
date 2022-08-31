@@ -1,0 +1,47 @@
+#include "../ShaderLib/ProceduralLib.cginc"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel GenerateHeightmapTexture
+#pragma kernel GenerateHeatTexture
+#pragma kernel GenerateHumidityTexture
+
+// Procedural data
+uint seed;
+float continent_scale;
+float solar_heat;
+float height_cooling;
+float humidity_factor;
+bool has_ocean;
+
+
+// Texture data
+uint height;
+uint width;
+
+// Input
+Texture2D<float4> base_texture;
+Texture2D<float> height_texture;
+
+// Output
+RWTexture2D<float> height_texture_out;
+RWTexture2D<float> heat_texture_out;
+RWTexture2D<float> humidity_texture_out;
+
+
+[numthreads(1, 1, 1)]
+void GenerateHeightmapTexture(uint3 id : SV_DispatchThreadID)
+{
+    height_texture_out[id.xy] = CalculateHeightValue(base_texture[id.xy].xyz, seed, continent_scale);
+}
+
+[numthreads(1, 1, 1)]
+void GenerateHeatTexture(uint3 id : SV_DispatchThreadID)
+{
+    heat_texture_out[id.xy] = CalculateHeatValue(base_texture[id.xy].xyz, height_texture[id.xy], solar_heat, height_cooling, has_ocean);
+}
+
+[numthreads(1, 1, 1)]
+void GenerateHumidityTexture(uint3 id : SV_DispatchThreadID)
+{
+    humidity_texture_out[id.xy] = CalculateHumidityValue(height_texture[id.xy], humidity_factor, has_ocean);
+}

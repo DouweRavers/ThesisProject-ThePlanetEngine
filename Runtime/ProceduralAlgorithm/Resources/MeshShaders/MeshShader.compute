@@ -1,0 +1,154 @@
+#include "../ShaderLib/ProceduralLib.cginc"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel NormalizeAndAmplify
+#pragma kernel Offset
+#pragma kernel SubdivideMesh
+#pragma kernel ApplyHeightmap
+
+// Batching values
+int batch;
+int maximum;
+
+// Mesh Buffers
+StructuredBuffer<int> input_index_array;
+StructuredBuffer<float3> input_vertice_array;
+StructuredBuffer<float2> input_uv_array;
+
+RWStructuredBuffer<int> output_index_array;
+RWStructuredBuffer<float3> output_vertice_array;
+RWStructuredBuffer<float2> output_uv_array;
+
+// Convert shape to sphere with given size
+float amplifier;
+
+[numthreads(1,1,1)]
+void NormalizeAndAmplify(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+    	output_vertice_array[i] = amplifier * normalize(input_vertice_array[i]);
+	}
+}
+
+// Translate vertices in local space (in mesh data)  
+float3 offset_vector;
+
+[numthreads(1,1,1)]
+void Offset(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		output_vertice_array[i] = input_vertice_array[i] + offset_vector;
+	}
+}
+
+
+// Subdivide mesh 
+//          A
+//	A       |  
+//	|  =>   Z-X
+//	C-B     | |  
+//          C-Y-B
+
+[numthreads(1, 1, 1)]
+void SubdivideMesh(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		int i_base = i * 3;
+		int i_a = input_index_array[i_base];
+		int i_b = input_index_array[i_base + 1];
+		int i_c = input_index_array[i_base + 2];
+
+		float3 A = input_vertice_array[i_a];
+		float3 B = input_vertice_array[i_b];
+		float3 C = input_vertice_array[i_c];
+
+		float2 Auv = input_uv_array[i_a];
+		float2 Buv = input_uv_array[i_b];
+		float2 Cuv = input_uv_array[i_c];
+
+		float3 X = lerp(A, B, 0.5);
+		float3 Y = lerp(B, C, 0.5);
+		float3 Z = lerp(C, A, 0.5);
+		
+		float2 Xuv = lerp(Auv, Buv, 0.5);
+		float2 Yuv = lerp(Buv, Cuv, 0.5);
+		float2 Zuv = lerp(Cuv, Auv, 0.5);
+
+
+		i_base = i * 6;
+		i_a = i_base;
+		i_b = i_base + 1;
+		i_c = i_base + 2;
+		int i_x = i_base + 3;
+		int i_y = i_base + 4;
+		int i_z = i_base + 5;
+
+		output_vertice_array[i_a] = A;
+		output_vertice_array[i_b] = B;
+		output_vertice_array[i_c] = C;
+		output_vertice_array[i_x] = X;
+		output_vertice_array[i_y] = Y;
+		output_vertice_array[i_z] = Z;
+
+		output_uv_array[i_a] = Auv;
+		output_uv_array[i_b] = Buv;
+		output_uv_array[i_c] = Cuv;
+		output_uv_array[i_x] = Xuv;
+		output_uv_array[i_y] = Yuv;
+		output_uv_array[i_z] = Zuv;
+		
+		i_base = i * 12;
+		output_index_array[i_base] = i_a;
+		output_index_array[i_base + 1] = i_x;
+		output_index_array[i_base + 2] = i_z;
+
+		output_index_array[i_base + 3] = i_x;
+		output_index_array[i_base + 4] = i_b;
+		output_index_array[i_base + 5] = i_y;
+
+		output_index_array[i_base + 6] = i_z;
+		output_index_array[i_base + 7] = i_y;
+		output_index_array[i_base + 8] = i_c;
+
+		output_index_array[i_base + 9] = i_z;
+		output_index_array[i_base + 10] = i_x;
+		output_index_array[i_base + 11] = i_y;
+	}
+}
+
+int seed;
+float continent_scale;
+int octaves;
+float height_difference;
+float3 planet_center;
+float4x4 object_to_world;
+float4x4 world_to_object;
+
+[numthreads(1,1,1)]
+void ApplyHeightmap(uint3 id : SV_DispatchThreadID)
+{
+	int index = (int) id.x;
+	for (int i = index * batch; i < (index + 1) * batch && i < maximum; i++)
+	{
+		// Convert from local(mesh) space to world space.
+		float3 world_vertex = mul(object_to_world, float4(input_vertice_array[i], 0)).xyz;
+		// Get direction from planet center to vertex. (world space)
+		float3 planet_vertex = world_vertex - planet_center;
+		float3 unit_sphere_vertex = normalize(planet_vertex);
+		// Height amplifier
+		float amplifier = lerp(0.01,0.1, height_difference);
+		// Get procedural height.
+		float height = amplifier * CalculateHeightValue(unit_sphere_vertex, seed, continent_scale, octaves);
+		// Reconstruct world_vertex but now with slight amplification of the radius to the planet center.
+		float3 world_output_vertex = planet_center + (1+height) * planet_vertex;
+		float3 output_vertex = mul(world_to_object, float4(world_output_vertex, 0)).xyz;
+		// Calculate new vertice and assign to output array.
+		output_vertice_array[i] = output_vertex;
+	}
+}

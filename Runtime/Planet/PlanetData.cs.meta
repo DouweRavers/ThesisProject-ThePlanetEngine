@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8215832683be67e48b91a5f860d36738
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - OceanGradient: {instanceID: 0}
+  - biomeGradient: {instanceID: 0}
+  - defaultImage: {fileID: 2800000, guid: 3cb9572f850dfe2439dae9349b55ebd0, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
