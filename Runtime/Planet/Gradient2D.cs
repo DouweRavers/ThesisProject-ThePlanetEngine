@@ -31,7 +31,7 @@ namespace PlanetEngine
             string path = AssetDatabase.GetAssetPath(texture);
             if (path == null || path.Length == 0)
             {
-                path = $"Assets/PlanetEngineData/new-PointTexture-{UnityEngine.Random.Range(1000, 9999)}.png";
+                path = $"Assets/PlanetEngineData/new-PointTexture-{Time.frameCount}.png";
                 File.WriteAllBytes(path, texture.EncodeToPNG());
                 AssetDatabase.ImportAsset(path);
                 var tImporter = AssetImporter.GetAtPath(path) as TextureImporter;

@@ -286,11 +286,6 @@ namespace PlanetEngine
             float solarHeat = _planet.Data.SolarHeat;
             float heightCooling = _planet.Data.HeightCooling;
             float humidity = _planet.Data.HumidityTransfer;
-            bool atmosphere = _planet.Data.HasAtmosphere;
-            Color atmosphereColor = _planet.Data.AtmosphereColor;
-            bool clouds = _planet.Data.HasClouds;
-            float cloudsdensity = _planet.Data.CloudDensity;
-            int cloudgradient = _planet.Data.CloudGradient.GetHashCode();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Solar heat");
@@ -307,44 +302,9 @@ namespace PlanetEngine
             _planet.Data.HumidityTransfer = EditorGUILayout.Slider(_planet.Data.HumidityTransfer, 0f, 1f);
             GUILayout.EndHorizontal();
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Atmosphere");
-            _planet.Data.HasAtmosphere = EditorGUILayout.Toggle(_planet.Data.HasAtmosphere);
-            GUILayout.EndHorizontal();
-
-            if (_planet.Data.HasAtmosphere)
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("Atmosphere color");
-                _planet.Data.AtmosphereColor = EditorGUILayout.ColorField(_planet.Data.AtmosphereColor);
-                GUILayout.EndHorizontal();
-
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("Clouds");
-                _planet.Data.HasClouds = EditorGUILayout.Toggle(_planet.Data.HasClouds);
-                GUILayout.EndHorizontal();
-                if (_planet.Data.HasClouds)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label("Clouds density");
-                    _planet.Data.CloudDensity = EditorGUILayout.Slider(_planet.Data.CloudDensity, 0f, 1f);
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label("Clouds Gradient");
-                    _planet.Data.CloudGradient = EditorGUILayout.GradientField(_planet.Data.CloudGradient);
-                    GUILayout.EndHorizontal();
-                }
-            }
-
             if (solarHeat != _planet.Data.SolarHeat ||
                 heightCooling != _planet.Data.HeightCooling ||
-                humidity != _planet.Data.HumidityTransfer ||
-                atmosphere != _planet.Data.HasAtmosphere ||
-                atmosphereColor != _planet.Data.AtmosphereColor ||
-                clouds != _planet.Data.HasClouds ||
-                cloudsdensity != _planet.Data.CloudDensity ||
-                cloudgradient != _planet.Data.CloudGradient.GetHashCode())
+                humidity != _planet.Data.HumidityTransfer)
             {
                 if (solarHeat != _planet.Data.SolarHeat || heightCooling != _planet.Data.HeightCooling) _planet.Data.PreviewHeat = true;
                 if (humidity != _planet.Data.HumidityTransfer) _planet.Data.PreviewHeat = false;

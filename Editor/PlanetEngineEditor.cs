@@ -13,6 +13,7 @@ namespace PlanetEngine
         static void AddPlanetCreatorToScene()
         {
             CreateTag("PlanetEngine");
+            CreateAssetFolder();
             GameObject planet = new GameObject("Planet");
             planet.tag = "PlanetEngine";
             planet.AddComponent<PreviewPlanet>();
@@ -40,6 +41,15 @@ namespace PlanetEngine
                 so.ApplyModifiedProperties();
                 so.Update();
             }
+        }
+
+        static void CreateAssetFolder() 
+        {
+            if (AssetDatabase.IsValidFolder("Assets/PlanetEngineData")) return;
+            AssetDatabase.CreateFolder("Assets", "PlanetEngineData");
+            AssetDatabase.CreateFolder("Assets/PlanetEngineData", "Resources");
+            Texture2D grass = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/Grass.jpg", typeof(Texture2D));
+            if(!AssetDatabase.CopyAsset("Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/Grass.jpg", "Assets/PlanetEngineData/Resources/Grass.jpg")) Debug.LogError("Copy failed");
         }
     }
 }
