@@ -227,7 +227,7 @@ namespace PlanetEngine
             if (oldRadius != _planet.Data.Radius) _changed = true;
             if (preset != _planet.Data.preset)
             {
-                _planet.Data.LoadData(preset);
+                _planet.Data.LoadPreset(preset);
                 _planet.Data.preset = preset;
                 _changed = true;
             }
@@ -466,6 +466,7 @@ namespace PlanetEngine
             else if (phase == PreviewDesignPhase.CLIMATE) _planet.Data.RandomizeClimateProperties();
             else if (phase == PreviewDesignPhase.BIOMES) _planet.Data.RandomizeBiomeProperties();
             else _planet.Data.Randomize();
+            _changed = true;
         }
     }
 }

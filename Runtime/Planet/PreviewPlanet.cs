@@ -46,18 +46,9 @@ namespace PlanetEngine
         }
 
         /// <summary>
-        /// Destroys current preview mesh and recreates a new one.
-        /// </summary>
-        public void Regenerate()
-        {
-            if (transform.childCount > 0) DestroyImmediate(transform.GetChild(0).gameObject);
-            GeneratePreview();
-        }
-
-        /// <summary>
         /// Creates a preview mesh according to current phase. If preview settings is disabled it will generate for the last phase.
         /// </summary>
-        void GeneratePreview()
+        public void Regenerate()
         {
             GetComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(Data);
             PreviewDesignPhase phase = PreviewCurrentPhase ? Phase : PreviewDesignPhase.NONE;

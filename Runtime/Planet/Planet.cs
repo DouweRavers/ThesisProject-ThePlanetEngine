@@ -35,19 +35,6 @@ namespace PlanetEngine
 
         /// <summary>
         /// Destroys previous generated planet and generates a new one instead.
-        /// Planet data is set to default.
-        /// </summary>
-        public void CreateNewPlanet()
-        {
-            // Remove previous structures
-            int childCount = transform.childCount;
-            for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
-
-            CreatePlanetFromData();
-        }
-
-        /// <summary>
-        /// Destroys previous generated planet and generates a new one instead.
         /// Planet data is set to default but seed is applied.
         /// </summary>
         /// <param name="seed">Seed for randomizer process.</param>
@@ -67,6 +54,19 @@ namespace PlanetEngine
         {
             Data = data;
             CreateNewPlanet();
+        }
+
+        /// <summary>
+        /// Destroys previous generated planet and generates a new one instead.
+        /// Planet data is set to default.
+        /// </summary>
+        void CreateNewPlanet()
+        {
+            // Remove previous structures
+            int childCount = transform.childCount;
+            for (int i = 0; i < childCount; i++) DestroyImmediate(transform.GetChild(0).gameObject);
+
+            CreatePlanetFromData();
         }
 
         /// <summary>

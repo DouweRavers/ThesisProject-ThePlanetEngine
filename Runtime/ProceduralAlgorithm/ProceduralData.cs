@@ -140,8 +140,10 @@ namespace PlanetEngine
         /// <param name="name">The name of the planet</param>
         public void SaveData(string name)
         {
+#if UNITY_EDITOR
             TextAsset file = new TextAsset(JsonUtility.ToJson(this, true));
             AssetDatabase.CreateAsset(file, $"Assets/PlanetEngineData/Resources/{name}-planetData.asset");
+#endif
         }
 
         /// <summary>
@@ -152,12 +154,16 @@ namespace PlanetEngine
         /// <exception>When file can't be found throws exception</exception>
         public void LoadData(string name)
         {
-            TextAsset file = Resources.Load<TextAsset>($"{name}-planetData.asset");
+#if UNITY_EDITOR
+            TextAsset file = AssetDatabase.LoadAssetAtPath<TextAsset>($"Assets/PlanetEngineData/Resources/{name}-planetData.asset");
+#else
+            TextAsset file = Resources.Load<TextAsset>($"{name}-planetData");
+#endif
             if (file == null) return;
             JsonUtility.FromJsonOverwrite(file.text, this);
         }
 
-        public void LoadData(PlanetPresetConfigurations preset)
+        public void LoadPreset(PlanetPresetConfigurations preset)
         {
             TextAsset file;
             switch (preset)
