@@ -96,12 +96,14 @@ namespace PlanetEngine
             {
                 // Check for change values
                 GradientPoint point = _planet.Data.BiomeGradient.Points[_planet.Data.BiomeGradient.LastSelectedPoint];
-                GradientPoint prevPoint = new GradientPoint(point.GetTexture(), point.Position, point.Weight);
+                Color prevColor = point.Color;
+                Vector2 prevPos = point.Position;
+                float prevWeight = point.Weight;
 
                 // Gradient point properties
                 GUILayout.Label("Texture:");
-                point.SetTexture(EditorGUILayout.ObjectField(_planet.Data.BiomeGradient.Points[_planet.Data.BiomeGradient.LastSelectedPoint].GetTexture(), typeof(Texture2D), false) as Texture2D);
-                point.UpdateColor();
+                Texture2D newTex = EditorGUILayout.ObjectField(_planet.Data.BiomeGradient.Points[_planet.Data.BiomeGradient.LastSelectedPoint].GetTexture(), typeof(Texture2D), false) as Texture2D;
+                if (newTex != null && !newTex.Equals(point.GetTexture())) point.SetTexture(newTex);
                 GUILayout.Label("Weight:");
                 point.Weight = GUILayout.HorizontalSlider(point.Weight, 0, 5, GUILayout.Height(20));
 
@@ -118,7 +120,7 @@ namespace PlanetEngine
                 {
                     // If not removed check for changes and apply new properties
                     _planet.Data.BiomeGradient.Points[_planet.Data.BiomeGradient.LastSelectedPoint] = point;
-                    if (!prevPoint.Equals(point))
+                    if (point.Color != prevColor || point.Position != prevPos || point.Weight != prevWeight)
                     {
                         GenerateTexture();
                     }
@@ -155,7 +157,7 @@ namespace PlanetEngine
                     else
                     {
                         List<GradientPoint> gradientPoints = new List<GradientPoint>(_planet.Data.BiomeGradient.Points);
-                        gradientPoints.Add(new GradientPoint(defaultTexture, positionNormalized, 1f));
+                        gradientPoints.Add(new GradientPoint(Resources.Load<Texture2D>("Presets/white"), positionNormalized, 1f));
                         _planet.Data.BiomeGradient.Points = gradientPoints.ToArray();
                         _planet.Data.BiomeGradient.LastSelectedPoint = gradientPoints.Count - 1;
                     }

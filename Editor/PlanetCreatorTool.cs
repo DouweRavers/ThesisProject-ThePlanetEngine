@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
-    internal enum PlanetPresetConfigurations { NONE, EARTH, MARS, MOON }
-
     /// <summary>
     /// This class represents the UI for creating the planet. It replaces the default UI of the previewPlanet and 
     /// changes the properties of the planetData object. These changes are displayed by the previewPlanet.
@@ -37,7 +35,6 @@ namespace PlanetEngine
             if (s_lastUpdate + 0.2f < Time.realtimeSinceStartup && _changed)
             {
                 _changed = false;
-                if (!AssetDatabase.IsValidFolder("Assets/PlanetEngineData")) AssetDatabase.CreateFolder("Assets", "PlanetEngineData");
                 _planet.Data.SaveData(_planet.name);
                 _planet.Regenerate();
                 SceneView.lastActiveSceneView.Frame(_planet.GetComponent<MeshRenderer>().bounds, false);
@@ -217,7 +214,6 @@ namespace PlanetEngine
             ShowPanelHeader("Basics - " + _planet.name);
 
             float oldRadius = _planet.Data.Radius;
-
             GUILayout.BeginHorizontal();
             GUILayout.Label("Radius:", GUILayout.Width(100f));
             _planet.Data.Radius = EditorGUILayout.Slider(_planet.Data.Radius / 1000f, 1f, 100f) * 1000f;
@@ -225,11 +221,16 @@ namespace PlanetEngine
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Preset:", GUILayout.Width(100f));
-            EditorGUILayout.EnumFlagsField(PlanetPresetConfigurations.NONE);
+            PlanetPresetConfigurations preset = (PlanetPresetConfigurations)EditorGUILayout.EnumPopup(_planet.Data.preset);
             GUILayout.EndHorizontal();
 
             if (oldRadius != _planet.Data.Radius) _changed = true;
-
+            if (preset != _planet.Data.preset)
+            {
+                _planet.Data.LoadData(preset);
+                _planet.Data.preset = preset;
+                _changed = true;
+            }
             ShowPanelFooter(PreviewDesignPhase.BASICS);
         }
 

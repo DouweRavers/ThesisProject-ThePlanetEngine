@@ -43,13 +43,24 @@ namespace PlanetEngine
             }
         }
 
-        static void CreateAssetFolder() 
+        static void CreateAssetFolder()
         {
             if (AssetDatabase.IsValidFolder("Assets/PlanetEngineData")) return;
             AssetDatabase.CreateFolder("Assets", "PlanetEngineData");
             AssetDatabase.CreateFolder("Assets/PlanetEngineData", "Resources");
-            Texture2D grass = (Texture2D)AssetDatabase.LoadAssetAtPath("Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/Grass.jpg", typeof(Texture2D));
-            if(!AssetDatabase.CopyAsset("Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/Grass.jpg", "Assets/PlanetEngineData/Resources/Grass.jpg")) Debug.LogError("Copy failed");
+            AssetDatabase.CreateFolder("Assets/PlanetEngineData/Resources", "Presets");
+
+            string[] presetAssets = new string[] {
+                "black.png","blue.png","brown.png","darkblue.png","darkgreen.png","darkgrey.png","darkred.png","darkyellow.png",
+                "green.png","grey.png","orange.png","red.png","white.png","yellow.png", "earth.asset", "mars.asset", "moon.asset"
+            };
+
+            foreach (string presetAsset in presetAssets)
+            {
+                AssetDatabase.LoadAssetAtPath<Texture2D>(ProceduralData.PackageAssetPath + presetAsset);
+                if (!AssetDatabase.CopyAsset(ProceduralData.PackageAssetPath + presetAsset, ProceduralData.AssetPath + "Presets/" + presetAsset))
+                    Debug.LogError("Copy failed: " + presetAsset);
+            }
         }
     }
 }

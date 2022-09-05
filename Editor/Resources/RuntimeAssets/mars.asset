@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!49 &4900000
+TextAsset:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: mars
+  m_Script: "{\n    \"PreviewHeat\": true,\n    \"Seed\": 0,\n    \"Radius\": 10000.0,\n   
+    \"ContinentScale\": 1.0,\n    \"heightDifference\": 0.5,\n    \"HasOcean\": false,\n   
+    \"OceanReflectiveness\": 0.739534854888916,\n    \"OceanGradient\": {\n       
+    \"Smooth\": 5.0,\n        \"LastSelectedPoint\": -1,\n        \"Points\": [\n           
+    {\n                \"Color\": {\n                    \"r\": 0.0,\n                   
+    \"g\": 0.0,\n                    \"b\": 1.0,\n                    \"a\": 1.0\n               
+    },\n                \"_texturePath\": \"\",\n                \"Position\": {\n                   
+    \"x\": 0.5,\n                    \"y\": 0.5\n                },\n               
+    \"Weight\": 5.0\n            }\n        ]\n    },\n    \"SolarHeat\": 0.5,\n   
+    \"HeightCooling\": 0.3479999899864197,\n    \"HumidityTransfer\": 0.5640000104904175,\n   
+    \"BiomeGradient\": {\n        \"Smooth\": 7.882090091705322,\n        \"LastSelectedPoint\":
+    2,\n        \"Points\": [\n            {\n                \"Color\": {\n                   
+    \"r\": 1.0,\n                    \"g\": 0.16470588743686677,\n                   
+    \"b\": 0.16470588743686677,\n                    \"a\": 1.0\n               
+    },\n                \"_texturePath\": \"Presets/red\",\n                \"Position\":
+    {\n                    \"x\": 0.32768362760543826,\n                    \"y\":
+    0.019999999552965165\n                },\n                \"Weight\": 2.444444417953491\n           
+    },\n            {\n                \"Color\": {\n                    \"r\": 1.0,\n                   
+    \"g\": 1.0,\n                    \"b\": 1.0,\n                    \"a\": 1.0\n               
+    },\n                \"_texturePath\": \"Presets/white\",\n                \"Position\":
+    {\n                    \"x\": 0.033898305147886279,\n                    \"y\":
+    0.05999999865889549\n                },\n                \"Weight\": 0.6111111044883728\n           
+    },\n            {\n                \"Color\": {\n                    \"r\": 0.6666666865348816,\n                   
+    \"g\": 0.0,\n                    \"b\": 0.0,\n                    \"a\": 1.0\n               
+    },\n                \"_texturePath\": \"Presets/darkred\",\n                \"Position\":
+    {\n                    \"x\": 0.7683615684509277,\n                    \"y\":
+    0.09000000357627869\n                },\n                \"Weight\": 1.0\n           
+    }\n        ]\n    },\n    \"FoliageTypes\": [],\n    \"TreeTypes\": [],\n   
+    \"MaxDepth\": 5,\n    \"LODSphereCount\": 3\n}"

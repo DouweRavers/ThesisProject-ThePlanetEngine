@@ -62,17 +62,6 @@ namespace PlanetEngine
             GetComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(Data);
             PreviewDesignPhase phase = PreviewCurrentPhase ? Phase : PreviewDesignPhase.NONE;
             GetComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetMaterial(Data, phase: phase, textureSize: 1024);
-            if ((!PreviewCurrentPhase || PreviewDesignPhase.CLIMATE <= Phase) && Data.HasAtmosphere)
-            {
-                GameObject Atmosphere = new GameObject("Atmosphere");
-                Atmosphere.tag = "PlanetEngine";
-                Atmosphere.transform.SetParent(transform);
-                Atmosphere.transform.localScale = Vector3.zero;
-                Atmosphere.transform.localScale = Vector3.one * 1.1f;
-                Atmosphere.AddComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(Data);
-                Atmosphere.AddComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetAtmosphereMaterial(Data);
-                Atmosphere.hideFlags = HideFlags.HideInHierarchy;
-            }
         }
     }
 }

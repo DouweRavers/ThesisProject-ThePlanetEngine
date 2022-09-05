@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!49 &4900000
+TextAsset:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: moon
+  m_Script: "{\n    \"PreviewHeat\": true,\n    \"Seed\": 0,\n    \"Radius\": 10000.0,\n   
+    \"ContinentScale\": 1.0,\n    \"heightDifference\": 0.5,\n    \"HasOcean\": false,\n   
+    \"OceanReflectiveness\": 0.739534854888916,\n    \"OceanGradient\": {\n       
+    \"Smooth\": 5.0,\n        \"LastSelectedPoint\": -1,\n        \"Points\": [\n           
+    {\n                \"Color\": {\n                    \"r\": 0.0,\n                   
+    \"g\": 0.0,\n                    \"b\": 1.0,\n                    \"a\": 1.0\n               
+    },\n                \"_texturePath\": \"\",\n                \"Position\": {\n                   
+    \"x\": 0.5,\n                    \"y\": 0.5\n                },\n               
+    \"Weight\": 5.0\n            }\n        ]\n    },\n    \"SolarHeat\": 0.5,\n   
+    \"HeightCooling\": 0.3479999899864197,\n    \"HumidityTransfer\": 0.5640000104904175,\n   
+    \"BiomeGradient\": {\n        \"Smooth\": 1.4791045188903809,\n        \"LastSelectedPoint\":
+    -1,\n        \"Points\": [\n            {\n                \"Color\": {\n                   
+    \"r\": 1.0,\n                    \"g\": 1.0,\n                    \"b\": 1.0,\n                   
+    \"a\": 1.0\n                },\n                \"_texturePath\": \"Presets/white\",\n               
+    \"Position\": {\n                    \"x\": 0.5197740197181702,\n                   
+    \"y\": 0.009999999776482582\n                },\n                \"Weight\":
+    2.1666667461395265\n            },\n            {\n                \"Color\":
+    {\n                    \"r\": 0.7019608020782471,\n                    \"g\":
+    0.7019608020782471,\n                    \"b\": 0.7019608020782471,\n                   
+    \"a\": 1.0\n                },\n                \"_texturePath\": \"Presets/grey\",\n               
+    \"Position\": {\n                    \"x\": 0.23728813230991364,\n                   
+    \"y\": 0.03999999910593033\n                },\n                \"Weight\": 2.555555582046509\n           
+    },\n            {\n                \"Color\": {\n                    \"r\": 0.40000003576278689,\n                   
+    \"g\": 0.40000003576278689,\n                    \"b\": 0.40000003576278689,\n                   
+    \"a\": 1.0\n                },\n                \"_texturePath\": \"Presets/darkgrey\",\n               
+    \"Position\": {\n                    \"x\": 0.7966101765632629,\n                   
+    \"y\": 0.029999999329447748\n                },\n                \"Weight\":
+    3.722222328186035\n            }\n        ]\n    },\n    \"FoliageTypes\": [],\n   
+    \"TreeTypes\": [],\n    \"MaxDepth\": 5,\n    \"LODSphereCount\": 3\n}"

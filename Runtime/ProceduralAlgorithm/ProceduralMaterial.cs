@@ -89,35 +89,6 @@ namespace PlanetEngine
         }
 
         /// <summary>
-        /// Get material for the atmosphere of the planet.
-        /// </summary>
-        /// <param name="data">Planet data</param>
-        /// <returns>The procedurally generated material</returns>
-        public static Material GetAtmosphereMaterial(ProceduralData data)
-        {
-            // Material and textures
-            Material material = new Material(Shader.Find("Standard"));
-            material.color = data.AtmosphereColor;
-            if (data.HasClouds)
-            {
-                Texture2D baseTexture = ProceduralTexture.GetBaseTexture(256, 256);
-                Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, data);
-                material.mainTexture = ProceduralTexture.GetHeightTextureColored(baseTexture, heightTexture, data);
-            }
-
-            // Enable fade mode on standard shader
-            material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            material.SetInt("_ZWrite", 0);
-            material.DisableKeyword("_ALPHATEST_ON");
-            material.EnableKeyword("_ALPHABLEND_ON");
-            material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            material.renderQueue = 3000;
-
-            return material;
-        }
-
-        /// <summary>
         /// This method generates the base data textures: heightmap, heatmap and humiditymap.
         /// They get stored staticly.
         /// </summary>

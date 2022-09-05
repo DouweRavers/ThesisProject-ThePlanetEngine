@@ -3,8 +3,8 @@
     "",
     "\\Editor",
     "\\Editor\\Resources",
-    "\\Runtime"
+    "\\Runtime",
+    "\\Runtime\\Planet"
   ],
-  "SelectedNode": "\\Editor\\Resources\\RuntimeAssets",
   "PreviewInSolutionExplorer": false
 }

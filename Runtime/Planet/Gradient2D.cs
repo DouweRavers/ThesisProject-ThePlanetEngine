@@ -28,11 +28,16 @@ namespace PlanetEngine
 
         public GradientPoint(Texture2D texture, Vector2 position, float weight)
         {
+#if UNITY_EDITOR
             string path = AssetDatabase.GetAssetPath(texture);
+#else
+            string path = null;
+#endif
             if (path == null || path.Length == 0)
             {
-                path = $"Assets/PlanetEngineData/new-PointTexture-{Time.frameCount}.png";
+                path = $"Assets/PlanetEngineData/Resources/new-PointTexture-{Time.frameCount}.png";
                 File.WriteAllBytes(path, texture.EncodeToPNG());
+#if UNITY_EDITOR
                 AssetDatabase.ImportAsset(path);
                 var tImporter = AssetImporter.GetAtPath(path) as TextureImporter;
                 if (tImporter != null)
@@ -44,8 +49,18 @@ namespace PlanetEngine
                     AssetDatabase.ImportAsset(path);
                     AssetDatabase.Refresh();
                 }
+#endif
             }
-            _texturePath = path;
+            if (path.StartsWith(ProceduralData.AssetPath)) _texturePath = path.Replace(ProceduralData.AssetPath, "").Replace(".png", "");
+            else
+            {
+#if UNITY_EDITOR
+                string assetName = path.Substring(path.LastIndexOf('/') + 1).ToLower();
+                if (!AssetDatabase.CopyAsset(path, ProceduralData.AssetPath + assetName))
+                    Debug.LogError("Copy failed: " + assetName);
+                _texturePath = assetName.Replace(".png", "");
+#endif
+            }
             Color = CalcAverageColorOfTexture(texture);
             Position = position;
             Weight = weight;
@@ -61,46 +76,71 @@ namespace PlanetEngine
 
         public void SetTexture(Texture2D texture)
         {
+            // Load path
+#if UNITY_EDITOR
             string path = AssetDatabase.GetAssetPath(texture);
+#else
+            string path = null;
+#endif
+
+            // Create image file if not a asset
             if (path == null || path.Length == 0)
             {
-                path = $"Assets/PlanetEngineData/new-PointTexture-{UnityEngine.Random.Range(1000, 9999)}.png";
+                path = $"Assets/PlanetEngineData/Resources/new-PointTexture-{Time.frameCount}.png";
                 File.WriteAllBytes(path, texture.EncodeToPNG());
-                AssetDatabase.ImportAsset(path);
-                var tImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (tImporter != null)
-                {
-                    tImporter.textureType = TextureImporterType.Default;
-
-                    tImporter.isReadable = true;
-
-                    AssetDatabase.ImportAsset(path);
-                    AssetDatabase.Refresh();
-                }
-
             }
-            _texturePath = path;
+
+            // Make asset readable
+#if UNITY_EDITOR
+            AssetDatabase.ImportAsset(path);
+            var tImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (tImporter != null)
+            {
+                tImporter.textureType = TextureImporterType.Default;
+
+                tImporter.isReadable = true;
+
+                AssetDatabase.ImportAsset(path);
+                AssetDatabase.Refresh();
+            }
+#endif
+
+            // Assign path as resource path
+            if (path.StartsWith(ProceduralData.AssetPath)) _texturePath = path.Replace(ProceduralData.AssetPath, "").Replace(".png", "");
+#if UNITY_EDITOR
+            else
+            {
+                string assetName = path.Substring(path.LastIndexOf('/') + 1).ToLower();
+                if (!AssetDatabase.CopyAsset(path, ProceduralData.AssetPath + assetName))
+                    Debug.LogError("Copy failed: " + assetName);
+                _texturePath = assetName.Replace(".png", "");
+            }
+#endif
+            UpdateColor();
         }
 
-        public void SetTexture(string path)
+        public void SetTexture(string path, bool resourcePath = false)
         {
-            _texturePath = path;
+            if (resourcePath) _texturePath = path;
+            else _texturePath = path.Replace(ProceduralData.AssetPath, "").Replace(".png", "");
+            UpdateColor();
         }
 
-        public Texture2D GetTexture() { return AssetDatabase.LoadAssetAtPath<Texture2D>(_texturePath); }
+        public Texture2D GetTexture() { return Resources.Load<Texture2D>(_texturePath); }
 
         public void UpdateColor()
         {
-            if (_texturePath == null || _texturePath.Length == 0) Color = CalcAverageColorOfTexture(AssetDatabase.LoadAssetAtPath<Texture2D>(_texturePath));
+            if (_texturePath != null && _texturePath.Length != 0)
+                Color = CalcAverageColorOfTexture(Resources.Load<Texture2D>(_texturePath));
         }
 
         public bool Equals(GradientPoint point)
         {
             return
-                this._texturePath == point._texturePath &&
-                this.Color == point.Color &&
-                this.Position == point.Position &&
-                this.Weight == point.Weight;
+                _texturePath == point._texturePath &&
+                Color == point.Color &&
+                Position == point.Position &&
+                Weight == point.Weight;
         }
 
 

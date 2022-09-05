@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace PlanetEngine
 {
+    public enum PlanetPresetConfigurations { NONE, EARTH, MARS, MOON }
 
     [Serializable]
     public struct VegetationReference
@@ -13,23 +14,12 @@ namespace PlanetEngine
         public float MaxHeat;
         public float MinHumidity;
         public float MaxHumidity;
+
         [SerializeField]
         string _path;
 
-
-        public void SetFoliage(Texture2D texture)
-        {
-            _path = AssetDatabase.GetAssetPath(texture);
-        }
-
-        public void SetTree(GameObject tree)
-        {
-            _path = AssetDatabase.GetAssetPath(tree);
-        }
-
-        public Texture2D GetFoliage() { return AssetDatabase.LoadAssetAtPath<Texture2D>(_path); }
-        public GameObject GetTree() { return AssetDatabase.LoadAssetAtPath<GameObject>(_path); }
-
+        public Texture2D GetFoliage() { return Resources.Load<Texture2D>(_path); }
+        public GameObject GetTree() { return Resources.Load<GameObject>(_path); }
 
         public bool Equals(VegetationReference dataEntry)
         {
@@ -39,6 +29,36 @@ namespace PlanetEngine
                 && MinHumidity == dataEntry.MinHumidity
                 && MaxHumidity == dataEntry.MaxHumidity;
         }
+
+#if UNITY_EDITOR
+        public void SetFoliage(Texture2D texture)
+        {
+            SaveAsset(texture, ".png");
+        }
+
+        public void SetTree(GameObject tree)
+        {
+            SaveAsset(tree, ".prefab");
+        }
+
+
+        private void SaveAsset(UnityEngine.Object asset, string fileType)
+        {
+            // Get asset path
+            string assetPath = AssetDatabase.GetAssetPath(asset);
+            if (assetPath == null || assetPath.Length == 0) return;
+            // Check if part of resource folder and convert assetpath to resource path
+            if (assetPath.StartsWith(ProceduralData.AssetPath))
+                _path = assetPath.Replace(ProceduralData.AssetPath, "").ToLower().Replace(fileType, "");
+            else
+            {
+                string assetName = assetPath.Substring(assetPath.LastIndexOf('/') + 1).ToLower();
+                if (!AssetDatabase.CopyAsset(assetPath, ProceduralData.AssetPath + assetName))
+                    Debug.LogError("Copy failed: " + assetName);
+                _path = assetName.Replace(fileType, "");
+            }
+        }
+#endif
     }
 
     /// <summary>
@@ -47,11 +67,19 @@ namespace PlanetEngine
     [Serializable]
     public class ProceduralData : ScriptableObject
     {
+        public const string PackageAssetPath = "Assets/ThesisProject-ThePlanetEngine/Editor/Resources/RuntimeAssets/"; // "Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/"
+        public const string AssetPath = "Assets/PlanetEngineData/Resources/";
+
         #region Preview properties
         /// <summary>
         /// An indicator for the previewplanet to determine to show heat or humidity map.
         /// </summary>
         public bool PreviewHeat = true;
+
+        /// <summary>
+        /// An configuration wich resembles known planets.
+        /// </summary>
+        public PlanetPresetConfigurations preset = PlanetPresetConfigurations.NONE;
         #endregion
 
         #region Procedural Properties
@@ -81,18 +109,6 @@ namespace PlanetEngine
         public float HeightCooling = 0.5f;
         /// <summary> The rate at which the humidity from the oceans seams landinward. </summary>
         public float HumidityTransfer = 0.5f;
-        // Atmosphere
-        /// <summary> Does this planet has a atmosphere? </summary>
-        public bool HasAtmosphere = false;
-        /// <summary> Color of atmosphere. </summary>
-        public Color AtmosphereColor = new Color(1, 1, 1, 0.1f);
-        // Clouds
-        /// <summary> Does the atmosphere has clouds? </summary>
-        public bool HasClouds = true;
-        /// <summary> The amount of clouds 0f=nothing, 1f=entire atmosphere. </summary>
-        public float CloudDensity = 0.5f;
-        /// <summary> The color of the clouds based on density (alpha included). </summary>
-        public Gradient CloudGradient;
         // Biomes
         /// <summary>color of terrain. x=heat, y=humidity </summary>
         public Gradient2D BiomeGradient;
@@ -100,7 +116,6 @@ namespace PlanetEngine
         public VegetationReference[] FoliageTypes;
         public VegetationReference[] TreeTypes;
         #endregion
-
 
         #region Rendering Properties
         /// <summary> The amount of subdivisions of the quad tree before max depht. </summary>
@@ -112,14 +127,12 @@ namespace PlanetEngine
         public void SetupDefaults()
         {
             OceanGradient = new Gradient2D(Color.blue);
-            BiomeGradient = new Gradient2D(Resources.Load<Texture2D>("Grass"));
-            CloudGradient = new Gradient();
+            BiomeGradient = new Gradient2D(Resources.Load<Texture2D>("Presets/green"));
             FoliageTypes = new VegetationReference[0];
             TreeTypes = new VegetationReference[0];
         }
 
         #region IO
-
         /// <summary>
         /// Saves the class properties to a file named by the parameter and following 
         /// convention: Assets/PlanetEngineData/"name"-planetData.json
@@ -128,7 +141,7 @@ namespace PlanetEngine
         public void SaveData(string name)
         {
             TextAsset file = new TextAsset(JsonUtility.ToJson(this, true));
-            AssetDatabase.CreateAsset(file, $"Assets/PlanetEngineData/{name}-planetData.asset");
+            AssetDatabase.CreateAsset(file, $"Assets/PlanetEngineData/Resources/{name}-planetData.asset");
         }
 
         /// <summary>
@@ -139,8 +152,29 @@ namespace PlanetEngine
         /// <exception>When file can't be found throws exception</exception>
         public void LoadData(string name)
         {
-            TextAsset file = AssetDatabase.LoadAssetAtPath<TextAsset>($"Assets/PlanetEngineData/{name}-planetData.asset");
+            TextAsset file = Resources.Load<TextAsset>($"{name}-planetData.asset");
             if (file == null) return;
+            JsonUtility.FromJsonOverwrite(file.text, this);
+        }
+
+        public void LoadData(PlanetPresetConfigurations preset)
+        {
+            TextAsset file;
+            switch (preset)
+            {
+                default:
+                case PlanetPresetConfigurations.NONE:
+                    return;
+                case PlanetPresetConfigurations.EARTH:
+                    file = Resources.Load<TextAsset>($"Presets/earth");
+                    break;
+                case PlanetPresetConfigurations.MARS:
+                    file = Resources.Load<TextAsset>($"Presets/mars");
+                    break;
+                case PlanetPresetConfigurations.MOON:
+                    file = Resources.Load<TextAsset>($"Presets/moon");
+                    break;
+            }
             JsonUtility.FromJsonOverwrite(file.text, this);
         }
         #endregion
@@ -163,6 +197,7 @@ namespace PlanetEngine
         public void RandomizeCelestialProperties()
         {
             Radius = UnityEngine.Random.Range(1000f, 100000f);
+            preset = PlanetPresetConfigurations.NONE;
         }
 
         /// <summary>
@@ -197,10 +232,6 @@ namespace PlanetEngine
             SolarHeat = UnityEngine.Random.Range(0f, 1f);
             HeightCooling = UnityEngine.Random.Range(0f, 1f);
             HumidityTransfer = UnityEngine.Random.Range(0f, 1f);
-            HasAtmosphere = UnityEngine.Random.Range(0, 2) == 0;
-            AtmosphereColor = UnityEngine.Random.ColorHSV(0f, 1f, 0f, 1f, 0f, 1f, 0f, 0.2f);
-            HasClouds = UnityEngine.Random.Range(0, 2) == 0;
-            CloudDensity = UnityEngine.Random.Range(0f, 1f);
         }
 
         /// <summary>
