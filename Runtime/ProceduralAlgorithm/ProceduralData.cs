@@ -67,7 +67,7 @@ namespace PlanetEngine
     [Serializable]
     public class ProceduralData : ScriptableObject
     {
-        public const string PackageAssetPath = "Assets/ThesisProject-ThePlanetEngine/Editor/Resources/RuntimeAssets/"; // "Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/"
+        public const string PackageAssetPath = "Packages/com.douwco.theplanetengine/Editor/Resources/RuntimeAssets/"; //  "Assets/ThesisProject-ThePlanetEngine/Editor/Resources/RuntimeAssets/"
         public const string AssetPath = "Assets/PlanetEngineData/Resources/";
 
         #region Preview properties
