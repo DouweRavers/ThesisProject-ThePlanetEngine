@@ -94,8 +94,8 @@ namespace PlanetEngine
             Vector3[] cornerPoints = GetCornerPoints(true);
             Texture2D baseValues = ProceduralTexture.GetBaseTexture(resolution, resolution, cornerPoints);
             float[,] heightValues = ProceduralTerrainData.GenerateHeightValues(baseValues, _planet.Data);
-            TerrainLayer[] layers = ProceduralTerrainData.GenerateTerrainLayers(_planet.Data);
-            float[,,] alphaValues = ProceduralTerrainData.GenerateAlphaValues(baseValues, _planet.Data);
+            TerrainLayer[] layers = ProceduralTerrainData.GenerateTerrainLayersRGB();
+            float[,,] alphaValues = ProceduralTerrainData.GenerateAlphaValuesRGB(baseValues, _planet.Data);
             TreePrototype[] treePrototypes = ProceduralTerrainData.GenerateTreePrototypes(_planet.Data);
             DetailPrototype[] detailPrototypes = ProceduralTerrainData.GenerateDetailPrototypes(_planet.Data);
             TreeInstance[] treeInstances = ProceduralTerrainData.GenerateTreeInstances(resolution / 10, _planet.Data);

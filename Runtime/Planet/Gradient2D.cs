@@ -226,7 +226,7 @@ namespace PlanetEngine
             float distance = Vector2.Distance(Points[pointNumber].Position, new Vector2(x, y));
             if (distance == 0) return 1f;
             distance = Mathf.Pow(distance, Smooth);
-            return 1 / (distance * Points[pointNumber].Weight);
+            return 1f / (distance * Points[pointNumber].Weight);
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 
 namespace PlanetEngine
@@ -20,7 +21,7 @@ namespace PlanetEngine
             {
                 int x = i % baseTexture.width;
                 int y = i / baseTexture.width;
-                heightArray[x, y] = 0.5f + buffer[i] / 2;
+                heightArray[baseTexture.width - 1 - x, y] = 0.5f + buffer[i] / 2;
             }
             return heightArray;
         }
@@ -44,6 +45,37 @@ namespace PlanetEngine
         }
 
         /// <summary>
+        /// Generates an array of textures with a red green and blue color.
+        /// </summary>
+        /// <returns>A array of terrainlayers</returns>
+        public static TerrainLayer[] GenerateTerrainLayersRGB()
+        {
+            TerrainLayer[] layers = new TerrainLayer[3];
+            // red
+            TerrainLayer redLayer = new TerrainLayer();
+            Texture2D redTexture = new Texture2D(1, 1);
+            redTexture.SetPixel(0, 0, Color.red);
+            redTexture.Apply();
+            redLayer.diffuseTexture = redTexture;
+            layers[0] = redLayer;
+            // green
+            TerrainLayer greenLayer = new TerrainLayer();
+            Texture2D greenTexture = new Texture2D(1, 1);
+            greenTexture.SetPixel(0, 0, Color.green);
+            greenTexture.Apply();
+            greenLayer.diffuseTexture = greenTexture;
+            layers[1] = greenLayer;
+            // blue
+            TerrainLayer blueLayer = new TerrainLayer();
+            Texture2D blueTexture = new Texture2D(1, 1);
+            blueTexture.SetPixel(0, 0, Color.blue);
+            blueTexture.Apply();
+            blueLayer.diffuseTexture = blueTexture;
+            layers[2] = blueLayer;
+            return layers;
+        }
+
+        /// <summary>
         /// Using the textureLayers an 3D array of float values is generated.
         /// Every x,y poisition has a float value for every terrainlayer in the z dimention.
         /// float values are betweeen 0f and 1f.
@@ -56,22 +88,47 @@ namespace PlanetEngine
             Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, planetData);
             Texture2D heatTexture = ProceduralTexture.GetHeatTexture(baseTexture, heightTexture, planetData);
             Texture2D humidityTexture = ProceduralTexture.GetHumidityTexture(baseTexture, planetData);
+
+            NativeArray<float> heatData = heatTexture.GetPixelData<float>(0);
+            NativeArray<float> humidityData = humidityTexture.GetPixelData<float>(0);
             float[,,] alphaValueArray = new float[baseTexture.width, baseTexture.height, planetData.BiomeGradient.Points.Length];
             for (int x = 0; x < baseTexture.width; x++)
             {
                 for (int y = 0; y < baseTexture.height; y++)
                 {
                     float totalWeight = 0;
+                    int xy = x + y * baseTexture.width;
                     for (int i = 0; i < planetData.BiomeGradient.Points.Length; i++)
                     {
-                        alphaValueArray[x, y, i] = planetData.BiomeGradient.GetPointValueAt(heatTexture.GetPixel(x, y).r, humidityTexture.GetPixel(x, y).r, i);
-                        totalWeight += alphaValueArray[x, y, i];
+                        alphaValueArray[x, y, i] = planetData.BiomeGradient.GetPointValueAt(heatData[xy], humidityData[xy], i);
+                        totalWeight += planetData.BiomeGradient.Points[i].Weight;
                     }
 
                     for (int i = 0; i < planetData.BiomeGradient.Points.Length; i++)
                     {
                         alphaValueArray[x, y, i] /= totalWeight;
                     }
+                }
+            }
+            return alphaValueArray;
+        }
+
+        public static float[,,] GenerateAlphaValuesRGB(Texture2D baseTexture, ProceduralData planetData)
+        {
+            Texture2D heightTexture = ProceduralTexture.GetHeightTexture(baseTexture, planetData);
+            Texture2D heatTexture = ProceduralTexture.GetHeatTexture(baseTexture, heightTexture, planetData);
+            Texture2D humidityTexture = ProceduralTexture.GetHumidityTexture(baseTexture, planetData);
+            Texture2D colorTexture = ProceduralTexture.GetBiomeTextureColored(heightTexture, heatTexture, humidityTexture, planetData);
+
+            float[,,] alphaValueArray = new float[baseTexture.width, baseTexture.height, 3];
+            for (int x = 0; x < baseTexture.width; x++)
+            {
+                for (int y = 0; y < baseTexture.height; y++)
+                {
+                    Color color = colorTexture.GetPixel(x, y);
+                    alphaValueArray[baseTexture.width - 1 - x, y, 0] = color.r;
+                    alphaValueArray[baseTexture.width - 1 - x, y, 1] = color.g;
+                    alphaValueArray[baseTexture.width - 1 - x, y, 2] = color.b;
                 }
             }
             return alphaValueArray;

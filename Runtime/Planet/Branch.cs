@@ -177,7 +177,7 @@ namespace PlanetEngine
             BaseTexture = ProceduralTexture.GetBaseTexture(parent.BaseTexture, zone);
             // Generate a plane which is a part of a parent plane on the unit cube.
             Vector3 offset = parent.Bounds.center +
-                2f * parent.Bounds.extents.x * new Vector3(zone.x - 0.25f, 0, zone.y - 0.25f);
+                parent.Bounds.size.x * new Vector3(zone.x - 0.25f, 0, zone.y - 0.25f);
             float size = parent.Bounds.size.magnitude / 4f;
             CreateBranch(offset, size);
         }

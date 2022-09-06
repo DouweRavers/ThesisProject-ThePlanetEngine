@@ -37,6 +37,12 @@ void GenerateHeightmapReflectiveTexture(uint3 id : SV_DispatchThreadID)
 void GenerateNormalTexture(uint3 id : SV_DispatchThreadID)
 {
     // TODO: When generating the cube map take in to account the edges.
+    // Temp: Hiding seams on edges
+    if (id.x < 5 || id.y < 5 || id.x > width - 6 || id.y > height - 6) {
+        normal_texture_out[id.xy] = float4(0.5, 0.5, 1, 1);
+        return;
+    }
+
     float Left, Right, Up, Down;
     if (has_ocean)
     {

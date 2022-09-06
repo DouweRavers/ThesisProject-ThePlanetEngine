@@ -71,7 +71,9 @@ namespace PlanetEngine
         {
             _ = GenerateDataTextures(data, baseTexture, textureSize);
             Texture2D colorTexture = ProceduralTexture.GetGroundTextureColored(s_heatmapTexture, s_humidityTexture, data);
-            return GenerateMaterial(colorTexture, null, null);
+            Texture2D normalTexture = ProceduralTexture.GetNormalTexture(s_heightTexture, data);
+
+            return GenerateMaterial(colorTexture, normalTexture, null);
         }
 
         /// <summary>
