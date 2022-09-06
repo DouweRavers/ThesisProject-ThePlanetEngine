@@ -119,7 +119,7 @@ namespace PlanetEngine
 
         #region Rendering Properties
         /// <summary> The amount of subdivisions of the quad tree before max depht. </summary>
-        public int MaxDepth = 5;
+        public int MaxDepth = 7;
         /// <summary> The amount of LOD versions of the planet. </summary>
         public int LODSphereCount = 3;
         #endregion

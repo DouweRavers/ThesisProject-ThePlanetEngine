@@ -53,6 +53,7 @@ namespace PlanetEngine
             GetComponent<MeshFilter>().mesh = ProceduralMesh.GetSizedSphereMesh(Data);
             PreviewDesignPhase phase = PreviewCurrentPhase ? Phase : PreviewDesignPhase.NONE;
             GetComponent<MeshRenderer>().sharedMaterial = ProceduralMaterial.GetMaterial(Data, phase: phase, textureSize: 1024);
+
         }
     }
 }

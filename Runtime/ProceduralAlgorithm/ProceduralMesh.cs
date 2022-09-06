@@ -42,12 +42,12 @@ namespace PlanetEngine
             Mesh planeMesh = MeshPrimitives.UnitQuad;
             planeMesh = MeshModifier.NormalizeAndAmplify(planeMesh, size);
             planeMesh = MeshModifier.Offset(planeMesh, offset);
-            planeMesh = MeshModifier.Subdivide(planeMesh, 5);
+            planeMesh = MeshModifier.Subdivide(planeMesh, 4);
             return planeMesh;
         }
 
         /// <summary>
-        /// Generates a partial spherical branched mesh with heightmap.
+        /// Generates a partial spherical  branched mesh with heightmap.
         /// </summary>
         /// <param name="branch">A reference to the branch object</param>
         /// <param name="planeMesh">A planemesh associated with current mesh</param>

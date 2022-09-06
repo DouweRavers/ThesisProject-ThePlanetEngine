@@ -8,6 +8,8 @@ namespace PlanetEngine
     /// </summary>
     public class Planet : BasePlanet
     {
+        public bool useTerrainSystem = false;
+
         /// <summary>
         /// The target for rendering the quad tree
         /// </summary>
@@ -31,6 +33,7 @@ namespace PlanetEngine
         {
             Vector3 vector = GetClosestPointToSurface(Target.position);
             Debug.DrawLine(transform.position, vector, Color.red, Mathf.Infinity);
+            Data.MaxDepth = 6;
         }
 
         /// <summary>
@@ -88,26 +91,31 @@ namespace PlanetEngine
         /// </summary>
         public void SwitchToTerrain()
         {
+            if (!useTerrainSystem) return;
             if (_terrainMode) return;
             _terrainMode = true;
             GetComponentInChildren<PlanetTerrain>().CreateTerrain();
             GetComponentInChildren<TreeRoot>().RemoveRootBranches();
 
+            GameObject shifter = new GameObject();
+            Transform parent = Target.parent;
+            shifter.transform.SetParent(Target);
+            shifter.transform.localPosition = Vector3.zero;
+
+            shifter.transform.SetParent(transform);
+            shifter.transform.LookAt(GetClosestPointToSurface(Target.position));
+            Target.SetParent(shifter.transform);
+
             // Position player at center
             float distance = Vector3.Distance(GetClosestPointToSurface(Target.position), Target.position);
             Vector3 terrainPos = GetComponentInChildren<PlanetTerrain>().transform.position;
             terrainPos += GetComponentInChildren<Terrain>().terrainData.size / 2f;
-            Target.position = terrainPos + Vector3.up * distance;
+            shifter.transform.position = terrainPos + Vector3.up * distance;
 
-            // Rotate player
-            Vector3 axisUp = Vector3.Cross(Vector3.up, Target.position - transform.position);
-            float angleUp = Vector3.SignedAngle(Target.position - transform.position, Vector3.up, axisUp);
+            shifter.transform.LookAt(terrainPos);
+            Target.SetParent(parent);
+            Destroy(shifter);
 
-            Vector3 axisRight = Vector3.Cross(Vector3.up, GetClosestPointToSurface(Target.position));
-            float angleRight = Vector3.SignedAngle(Target.right, axisRight, GetClosestPointToSurface(Target.position)) + 90;
-
-            Target.RotateAround(Target.position, axisUp, angleUp);
-            Target.RotateAround(Target.position, Vector3.up, angleRight);
         }
 
         /// <summary>
@@ -122,15 +130,24 @@ namespace PlanetEngine
             tree.CreateRootBranches();
             terrain.DestroyTerrain();
 
-            // Position player
-            Vector3 position = GetClosestPointToSurface(Target.position);
-            float distance = Vector3.Distance(position, Target.position);
-            Target.position = position + position.normalized * distance;
+            GameObject shifter = new GameObject();
+            Transform parent = Target.parent;
+            shifter.transform.SetParent(Target);
+            shifter.transform.localPosition = Vector3.zero;
 
-            // Rotate player
-            float angle = Vector3.Angle(Vector3.up, Target.position);
-            Vector3 axis = Vector3.Cross(Vector3.up, Target.position - transform.position);
-            Target.RotateAround(Target.position, axis, angle);
+            shifter.transform.SetParent(transform);
+            shifter.transform.LookAt(GetClosestPointToSurface(Target.position));
+            Target.SetParent(shifter.transform);
+
+            // Position player at center
+            float distance = Vector3.Distance(GetClosestPointToSurface(Target.position), Target.position);
+            Vector3 terrainPos = GetComponentInChildren<PlanetTerrain>().transform.position;
+            terrainPos += GetComponentInChildren<Terrain>().terrainData.size / 2f;
+            shifter.transform.position = terrainPos + Vector3.up * distance;
+
+            shifter.transform.LookAt(terrainPos);
+            Target.SetParent(parent);
+            Destroy(shifter);
         }
 
         /// <summary>

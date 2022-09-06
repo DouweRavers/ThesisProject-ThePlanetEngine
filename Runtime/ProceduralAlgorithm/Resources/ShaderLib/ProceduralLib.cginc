@@ -25,13 +25,13 @@ float CalculateHeatValue(float3 vertex, float height, float solar_heat, float he
 
 float CalculateHumidityValue(float height, float humidity_factor, bool has_ocean){
     if (!has_ocean) return 0;
-    float humidity = height < 0 ? 1 : sqrt((1 - 2 * height) * humidity_factor);
+    float humidity = clamp(sqrt((1 - height/ (humidity_factor+0.0001))), 0, 1);
     return humidity;
 }
 
 float CalculateDepthValue(float height_value)
 {
-    return clamp(--height_value, 0, 1);
+    return abs(clamp(height_value, -1,0));
 }
 
 #endif
