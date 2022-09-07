@@ -33,7 +33,7 @@ namespace PlanetEngine
         {
             Vector3 vector = GetClosestPointToSurface(Target.position);
             Debug.DrawLine(transform.position, vector, Color.red, Mathf.Infinity);
-            Data.MaxDepth = 6;
+            Data.MaxDepth = 4;
         }
 
         /// <summary>

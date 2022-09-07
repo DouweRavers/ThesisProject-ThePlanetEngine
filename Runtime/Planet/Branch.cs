@@ -157,7 +157,7 @@ namespace PlanetEngine
             // Is the first branch in a tree so depth is zero.
             QuadDepth = 0;
             // Generate the base texture for a non parent branch.
-            BaseTexture = ProceduralTexture.GetBaseTexture(254, 254, side);
+            BaseTexture = ProceduralTexture.GetBaseTexture(64, 64, side);
             // Generate a plane which represents a single side on a unit cube.
             Vector3 offset = Vector3.up * 0.5f;
             float size = Mathf.Sqrt(0.5f);
