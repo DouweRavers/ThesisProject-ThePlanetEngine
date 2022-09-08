@@ -47,7 +47,7 @@ namespace PlanetEngine
             float specificTerrainHeight = GetComponent<Terrain>().SampleHeight(_planet.Target.position);
             float heightAboveTerrain = (_planet.Target.position.y - transform.position.y) - specificTerrainHeight;
 
-            if (terrainHeight * 1.5 < heightAboveTerrain)
+            if (terrainHeight * 5f < heightAboveTerrain)
             {
                 _planet.SwitchToTree();
             }

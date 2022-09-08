@@ -79,7 +79,7 @@ namespace PlanetEngine
             // If the max branching level is achieved the planet switches to a terrain.
             if (QuadDepth == planet.Data.MaxDepth)
             {
-                planet.SwitchToTerrain();
+                planet.SwitchToTerrain(transform);
                 return;
             }
             // Create new child branches and disable own visuals.

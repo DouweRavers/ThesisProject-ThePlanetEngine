@@ -8,7 +8,7 @@ namespace PlanetEngine
     /// </summary>
     public class Planet : BasePlanet
     {
-        public bool useTerrainSystem = false;
+        public bool useTerrainSystem = true;
 
         /// <summary>
         /// The target for rendering the quad tree
@@ -31,9 +31,7 @@ namespace PlanetEngine
 
         private void Start()
         {
-            Vector3 vector = GetClosestPointToSurface(Target.position);
-            Debug.DrawLine(transform.position, vector, Color.red, Mathf.Infinity);
-            Data.MaxDepth = 4;
+            Data.MaxDepth = 5;
         }
 
         /// <summary>
@@ -89,33 +87,28 @@ namespace PlanetEngine
         /// <summary>
         /// The planet goes from tree/LOD rendering to terrain rendering.
         /// </summary>
-        public void SwitchToTerrain()
+        public void SwitchToTerrain(Transform branchTransform)
         {
             if (!useTerrainSystem) return;
             if (_terrainMode) return;
             _terrainMode = true;
             GetComponentInChildren<PlanetTerrain>().CreateTerrain();
-            GetComponentInChildren<TreeRoot>().RemoveRootBranches();
 
-            GameObject shifter = new GameObject();
-            Transform parent = Target.parent;
-            shifter.transform.SetParent(Target);
-            shifter.transform.localPosition = Vector3.zero;
-
-            shifter.transform.SetParent(transform);
-            shifter.transform.LookAt(GetClosestPointToSurface(Target.position));
-            Target.SetParent(shifter.transform);
-
-            // Position player at center
-            float distance = Vector3.Distance(GetClosestPointToSurface(Target.position), Target.position);
+            // Calc distance to surface
+            Vector3 position = GetClosestPointToSurface(Target.position);
+            float distance = Vector3.Distance(position, Target.position);
+            // Calc terrain position
             Vector3 terrainPos = GetComponentInChildren<PlanetTerrain>().transform.position;
             terrainPos += GetComponentInChildren<Terrain>().terrainData.size / 2f;
-            shifter.transform.position = terrainPos + Vector3.up * distance;
-
-            shifter.transform.LookAt(terrainPos);
+            // Rotate camera
+            Transform parent = Target.parent;
+            Target.SetParent(branchTransform);
+            branchTransform.eulerAngles = Vector3.zero;
             Target.SetParent(parent);
-            Destroy(shifter);
+            // Position player
+            Target.position = terrainPos + Vector3.up * distance;
 
+            GetComponentInChildren<TreeRoot>().RemoveRootBranches();
         }
 
         /// <summary>
@@ -128,26 +121,18 @@ namespace PlanetEngine
             TreeRoot tree = GetComponentInChildren<TreeRoot>();
             PlanetTerrain terrain = GetComponentInChildren<PlanetTerrain>();
             tree.CreateRootBranches();
+
+
+            // Position player
+            float distance = Target.position.y - terrain.transform.position.y;
+            Target.position = terrain.transform.position + terrain.transform.position.normalized * distance;
+
+            // Rotate player
+            float angle = Vector3.Angle(Vector3.up, Target.position);
+            Vector3 axis = Vector3.Cross(Vector3.up, Target.position - transform.position);
+            Target.RotateAround(Target.position, axis, angle);
+
             terrain.DestroyTerrain();
-
-            GameObject shifter = new GameObject();
-            Transform parent = Target.parent;
-            shifter.transform.SetParent(Target);
-            shifter.transform.localPosition = Vector3.zero;
-
-            shifter.transform.SetParent(transform);
-            shifter.transform.LookAt(GetClosestPointToSurface(Target.position));
-            Target.SetParent(shifter.transform);
-
-            // Position player at center
-            float distance = Vector3.Distance(GetClosestPointToSurface(Target.position), Target.position);
-            Vector3 terrainPos = GetComponentInChildren<PlanetTerrain>().transform.position;
-            terrainPos += GetComponentInChildren<Terrain>().terrainData.size / 2f;
-            shifter.transform.position = terrainPos + Vector3.up * distance;
-
-            shifter.transform.LookAt(terrainPos);
-            Target.SetParent(parent);
-            Destroy(shifter);
         }
 
         /// <summary>
